@@ -1,0 +1,33 @@
+# --- Configuración sensible ---
+# config.js contiene credenciales (URL y token de la API de Dolibarr).
+# Nunca debe versionarse. Usar config.example.js como plantilla.
+config.js
+
+# --- Sistema operativo ---
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+Desktop.ini:Zone.Identifier
+*:Zone.Identifier
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# --- Editores / IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Logs y temporales ---
+*.log
+npm-debug.log*
