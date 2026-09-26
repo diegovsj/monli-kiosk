@@ -1,0 +1,414 @@
+/* ==========================================================================
+   Monli Kiosk — Estilos
+   Identidad visual Monli Limón (Guía Visual v0.2)
+   ========================================================================== */
+
+/* Tipografía principal de marca */
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap');
+
+/* --------------------------------------------------------------------------
+   Variables de marca
+   -------------------------------------------------------------------------- */
+:root {
+  /* Núcleo */
+  --menta:          #76CCB6; /* Menta Monli — color principal */
+  --amarillo:       #F1D077; /* Amarillo Limón — acento */
+  --azul-pizarra:   #55607A; /* Azul Pizarra — textos / UI */
+  --nube:           #FFFDF8; /* Nube — fondo */
+  --blanco:         #FFFFFF; /* Blanco — superficies */
+
+  /* Apoyo */
+  --rosa-coral:     #FF8FA3;
+  --melocoton:      #FFBFA3;
+  --lila:           #D9B4EE;
+  --aqua:           #BDEDF5;
+  --verde-hoja:     #74A77A;
+  --ocre-miel:      #C99A4A;
+
+  /* Derivados funcionales */
+  --texto:          var(--azul-pizarra);
+  --texto-suave:    #7F8898;
+  --texto-tenue:    #A8B2C2;
+  --borde:          #E8ECF1;
+  --sombra:         0 8px 24px rgba(85, 96, 122, 0.08);
+
+  /* Forma y ritmo */
+  --radio-sm:       12px;
+  --radio:          20px;
+  --radio-lg:       28px;
+  --esp-1:          8px;
+  --esp-2:          16px;
+  --esp-3:          24px;
+  --esp-4:          32px;
+  --esp-5:          48px;
+
+  /* Tipografía */
+  --fuente:         'Quicksand', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* --------------------------------------------------------------------------
+   Reset ligero
+   -------------------------------------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--fuente);
+  font-weight: 500;
+  color: var(--texto);
+  background: var(--nube);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* --------------------------------------------------------------------------
+   Layout general
+   -------------------------------------------------------------------------- */
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    'header header'
+    'main   status';
+  gap: var(--esp-4);
+  padding: var(--esp-4);
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* --------------------------------------------------------------------------
+   Header
+   -------------------------------------------------------------------------- */
+.app-header {
+  grid-area: header;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  background: var(--blanco);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-lg);
+  padding: var(--esp-3) var(--esp-4);
+  box-shadow: var(--sombra);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+}
+
+.brand__logo {
+  height: 48px;
+  width: auto;
+}
+
+.brand__title {
+  font-size: 1.5rem;
+  color: var(--azul-pizarra);
+}
+
+.brand__subtitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--menta);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.header-meta__time {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+  background: var(--nube);
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  padding: var(--esp-1) var(--esp-2);
+}
+
+/* --------------------------------------------------------------------------
+   Main
+   -------------------------------------------------------------------------- */
+.app-main {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+  min-width: 0;
+}
+
+/* KPIs --------------------------------------------------------------------- */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--esp-3);
+}
+
+.kpi-card {
+  background: var(--blanco);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  padding: var(--esp-3);
+  box-shadow: var(--sombra);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-1);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(85, 96, 122, 0.12);
+}
+
+.kpi-card__label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--texto-tenue);
+}
+
+.kpi-card__value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--azul-pizarra);
+  line-height: 1.1;
+}
+
+.kpi-card__hint {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--texto-suave);
+}
+
+/* Variante destacada con Menta (KPI principal) */
+.kpi-card--featured {
+  background: var(--menta);
+  border-color: var(--menta);
+}
+
+.kpi-card--featured .kpi-card__label,
+.kpi-card--featured .kpi-card__hint {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.kpi-card--featured .kpi-card__value {
+  color: var(--blanco);
+}
+
+/* Paneles ------------------------------------------------------------------ */
+.panel {
+  background: var(--blanco);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--esp-3);
+  border-bottom: 1px solid var(--borde);
+}
+
+.panel__title {
+  font-size: 1.1rem;
+  color: var(--azul-pizarra);
+}
+
+.panel__badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--azul-pizarra);
+  background: var(--amarillo);
+  border-radius: 999px;
+  padding: 2px 12px;
+}
+
+.panel__body {
+  padding: var(--esp-2) var(--esp-3) var(--esp-3);
+  overflow-x: auto;
+}
+
+/* Tabla de pedidos --------------------------------------------------------- */
+.orders-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.orders-table th {
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--texto-tenue);
+  padding: var(--esp-2) var(--esp-2);
+  border-bottom: 1px solid var(--borde);
+}
+
+.orders-table td {
+  padding: var(--esp-2);
+  border-bottom: 1px solid var(--nube);
+  color: var(--texto);
+  font-weight: 500;
+}
+
+.orders-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.orders-table tbody tr:hover td {
+  background: var(--nube);
+}
+
+.orders-table__empty td {
+  text-align: center;
+  color: var(--texto-tenue);
+  padding: var(--esp-4);
+  font-style: italic;
+}
+
+/* Etiquetas de estado */
+.status-tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 2px 10px;
+  background: var(--aqua);
+  color: var(--azul-pizarra);
+}
+
+.status-tag--pending {
+  background: var(--amarillo);
+}
+
+.status-tag--paid {
+  background: var(--menta);
+  color: var(--blanco);
+}
+
+.status-tag--cancelled {
+  background: var(--rosa-coral);
+  color: var(--blanco);
+}
+
+/* --------------------------------------------------------------------------
+   Estado de la Orange Pi (sidebar)
+   -------------------------------------------------------------------------- */
+.system-status {
+  grid-area: status;
+  background: var(--blanco);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  padding: var(--esp-3);
+  align-self: start;
+  position: sticky;
+  top: var(--esp-4);
+}
+
+.system-status__title {
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--texto-tenue);
+  margin-bottom: var(--esp-3);
+}
+
+.system-status__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+}
+
+.system-status__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-2);
+  padding-bottom: var(--esp-2);
+  border-bottom: 1px solid var(--nube);
+}
+
+.system-status__item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.system-status__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+.system-status__value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--azul-pizarra);
+}
+
+/* Indicador de conexión */
+.dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 6px;
+  background: var(--texto-tenue);
+}
+
+.dot--ok   { background: var(--verde-hoja); }
+.dot--warn { background: var(--amarillo); }
+.dot--err  { background: var(--rosa-coral); }
+
+/* --------------------------------------------------------------------------
+   Responsive (pantallas estrechas)
+   -------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'header'
+      'main'
+      'status';
+    padding: var(--esp-3);
+    gap: var(--esp-3);
+  }
+
+  .system-status {
+    position: static;
+  }
+}

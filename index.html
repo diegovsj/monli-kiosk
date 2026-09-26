@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monli Kiosk · Dashboard</title>
+  <meta name="description" content="Dashboard Kiosk de Monli Limón: ventas, pedidos y estado de la Orange Pi." />
+
+  <!-- Google Fonts: Quicksand (tipografía principal de marca) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+
+    <!-- ===================== HEADER ===================== -->
+    <header class="app-header">
+      <div class="brand">
+        <img
+          class="brand__logo"
+          src="assets/logo-monli.png"
+          alt="Logo Monli Limón"
+          onerror="this.style.display='none'"
+        />
+        <div class="brand__text">
+          <h1 class="brand__title">Monli Limón</h1>
+          <p class="brand__subtitle">Panel de control</p>
+        </div>
+      </div>
+
+      <div class="header-meta">
+        <span id="last-update" class="header-meta__time">—</span>
+      </div>
+    </header>
+
+    <!-- ===================== CONTENIDO ===================== -->
+    <main class="app-main">
+
+      <!-- KPIs de ventas -->
+      <section class="kpis" aria-label="Indicadores de ventas">
+        <article class="kpi-card" id="kpi-sales-today">
+          <h2 class="kpi-card__label">Ventas de hoy</h2>
+          <p class="kpi-card__value" data-value>—</p>
+          <p class="kpi-card__hint" data-hint>Cargando…</p>
+        </article>
+
+        <article class="kpi-card" id="kpi-sales-month">
+          <h2 class="kpi-card__label">Ventas del mes</h2>
+          <p class="kpi-card__value" data-value>—</p>
+          <p class="kpi-card__hint" data-hint>Cargando…</p>
+        </article>
+
+        <article class="kpi-card" id="kpi-orders-pending">
+          <h2 class="kpi-card__label">Pedidos pendientes</h2>
+          <p class="kpi-card__value" data-value>—</p>
+          <p class="kpi-card__hint" data-hint>Cargando…</p>
+        </article>
+
+        <article class="kpi-card" id="kpi-invoices-pending">
+          <h2 class="kpi-card__label">Facturas pendientes</h2>
+          <p class="kpi-card__value" data-value>—</p>
+          <p class="kpi-card__hint" data-hint>Cargando…</p>
+        </article>
+      </section>
+
+      <!-- Pedidos recientes -->
+      <section class="panel orders" aria-label="Pedidos recientes">
+        <header class="panel__header">
+          <h2 class="panel__title">Pedidos recientes</h2>
+          <span id="orders-count" class="panel__badge">—</span>
+        </header>
+
+        <div class="panel__body">
+          <table class="orders-table">
+            <thead>
+              <tr>
+                <th scope="col">Nº</th>
+                <th scope="col">Cliente</th>
+                <th scope="col">Fecha</th>
+                <th scope="col">Importe</th>
+                <th scope="col">Estado</th>
+              </tr>
+            </thead>
+            <tbody id="orders-body">
+              <tr class="orders-table__empty">
+                <td colspan="5">Sin datos todavía…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- ===================== SIDEBAR / FOOTER: ESTADO ORANGE PI ===================== -->
+    <aside class="system-status" aria-label="Estado de la Orange Pi">
+      <h2 class="system-status__title">Estado del dispositivo</h2>
+
+      <ul class="system-status__list">
+        <li class="system-status__item">
+          <span class="system-status__label">Conexión</span>
+          <span id="sys-connection" class="system-status__value">—</span>
+        </li>
+        <li class="system-status__item">
+          <span class="system-status__label">Temperatura</span>
+          <span id="sys-temp" class="system-status__value">—</span>
+        </li>
+        <li class="system-status__item">
+          <span class="system-status__label">CPU</span>
+          <span id="sys-cpu" class="system-status__value">—</span>
+        </li>
+        <li class="system-status__item">
+          <span class="system-status__label">Memoria</span>
+          <span id="sys-ram" class="system-status__value">—</span>
+        </li>
+        <li class="system-status__item">
+          <span class="system-status__label">Activo desde</span>
+          <span id="sys-uptime" class="system-status__value">—</span>
+        </li>
+      </ul>
+    </aside>
+
+  </div>
+
+  <!-- Configuración local (NO versionada). La plantilla es config.example.js -->
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
