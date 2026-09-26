@@ -73,6 +73,16 @@ function toDate(value) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+/**
+ * Fecha de una factura, tolerando los distintos nombres de campo que puede
+ * devolver la API REST de Dolibarr (`datef` en el objeto interno frente a
+ * `date` en la representación JSON del endpoint `/invoices`).
+ * @returns {Date|null}
+ */
+function invoiceDate(inv) {
+  return toDate(inv?.datef ?? inv?.date);
+}
+
 /** Formatea una fecha al formato local corto. */
 function formatDate(value) {
   const date = toDate(value);
@@ -254,12 +264,12 @@ function computeMetrics() {
   const year = now.getFullYear();
   const months = getQuarterMonths(quarter);
 
-  const invoicesQuarter = state.invoices.filter((inv) => isInQuarter(toDate(inv.datef), quarter, year));
+  const invoicesQuarter = state.invoices.filter((inv) => isInQuarter(invoiceDate(inv), quarter, year));
   const ordersQuarter = state.orders.filter((ord) => isInQuarter(toDate(ord.date_commande), quarter, year));
 
   const totalInvoicedQuarter = invoicesQuarter.reduce((sum, inv) => sum + (Number(inv.total_ttc) || 0), 0);
   const totalInvoicedMonth = invoicesQuarter
-    .filter((inv) => toDate(inv.datef)?.getMonth() === now.getMonth())
+    .filter((inv) => invoiceDate(inv)?.getMonth() === now.getMonth())
     .reduce((sum, inv) => sum + (Number(inv.total_ttc) || 0), 0);
 
   const pendingInvoices = state.invoices.filter(
@@ -269,7 +279,7 @@ function computeMetrics() {
 
   // Serie mensual del trimestre (facturado / pendiente).
   const monthly = months.map((monthIndex) => {
-    const monthInvoices = invoicesQuarter.filter((inv) => toDate(inv.datef)?.getMonth() === monthIndex);
+    const monthInvoices = invoicesQuarter.filter((inv) => invoiceDate(inv)?.getMonth() === monthIndex);
     const invoiced = monthInvoices.reduce((sum, inv) => sum + (Number(inv.total_ttc) || 0), 0);
     const pending = monthInvoices
       .filter((inv) => Number(inv.paye) !== 1 && Number(inv.statut) !== 3)

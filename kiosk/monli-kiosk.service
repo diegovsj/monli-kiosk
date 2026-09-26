@@ -1,0 +1,26 @@
+[Unit]
+Description=Monli Kiosk - autostart de Chromium a pantalla completa
+Documentation=https://github.com/diegovsj/monli-kiosk
+After=systemd-user-sessions.service network-online.target nginx.service
+Wants=network-online.target
+Conflicts=getty@tty1.service
+
+[Service]
+Type=simple
+User=diego
+Group=diego
+Environment=HOME=/home/diego
+Environment=XAUTHORITY=/home/diego/.Xauthority
+WorkingDirectory=/home/diego
+TTYPath=/dev/tty1
+StandardInput=tty
+StandardOutput=journal
+StandardError=journal
+TTYReset=yes
+TTYVHangup=yes
+ExecStart=/usr/bin/startx /opt/monli/scripts/start_kiosk.sh -- :0 -nolisten tcp vt1
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
