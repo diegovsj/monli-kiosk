@@ -8,7 +8,7 @@
 
 ### Fase 1 — Scaffolding e inicialización del frontend
 
-**Estado:** En progreso
+**Estado:** ✅ Completada (26/09/2026)
 
 **Objetivos de la fase:**
 
@@ -21,14 +21,14 @@
 
 **Entregables:**
 
-- [ ] `OPENSPEC.md`
-- [ ] `STATE.md`
-- [ ] `.gitignore`
-- [ ] `config.example.js`
-- [ ] `config.js` (local, no versionado)
-- [ ] `index.html`
-- [ ] `style.css`
-- [ ] `app.js`
+- [x] `OPENSPEC.md`
+- [x] `STATE.md`
+- [x] `.gitignore`
+- [x] `config.example.js`
+- [x] `config.js` (local, no versionado)
+- [x] `index.html`
+- [x] `style.css`
+- [x] `app.js`
 
 ---
 
@@ -36,7 +36,7 @@
 
 | Fase | Descripción                                  | Estado      |
 |------|----------------------------------------------|-------------|
-| 1    | Scaffolding e inicialización del frontend    | En progreso |
+| 1    | Scaffolding e inicialización del frontend    | ✅ Completada |
 | 2    | Integración API REST de Dolibarr             | Pendiente   |
 | 3    | Integración `status.json` de la Orange Pi    | Pendiente   |
 | 4    | Modo Kiosk, autoarranque y despliegue        | Pendiente   |
