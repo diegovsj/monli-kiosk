@@ -333,6 +333,58 @@ button {
 }
 
 /* --------------------------------------------------------------------------
+   Estados de alerta de los KPI (temperatura, CPU, RAM y disco)
+   - .warning: borde y acento en Amarillo Limón (#F1D077)
+   - .danger : borde y acento en Rosa Coral (#FF8FA3) + badge de aviso
+   -------------------------------------------------------------------------- */
+.kpi-card.warning {
+  border: 2px solid var(--amarillo);
+  border-left: 6px solid var(--amarillo);
+  box-shadow: 0 0 0 3px rgba(241, 208, 119, 0.28), var(--sombra);
+}
+
+.kpi-card.warning .kpi-card__label {
+  color: #8A6D1E;
+}
+
+.kpi-card.warning .kpi-card__value {
+  color: #B8891B;
+}
+
+.kpi-card.danger {
+  position: relative;
+  border: 2px solid var(--rosa-coral);
+  border-left: 6px solid var(--rosa-coral);
+  box-shadow: 0 0 0 3px rgba(255, 143, 163, 0.32), var(--sombra);
+}
+
+.kpi-card.danger .kpi-card__label {
+  color: #C24A61;
+}
+
+.kpi-card.danger .kpi-card__value {
+  color: #C24A61;
+}
+
+/* Badge de aviso (solo en estado .danger) */
+.kpi-card.danger::after {
+  content: '⚠ Aviso';
+  position: absolute;
+  top: -10px;
+  right: var(--esp-2);
+  background: var(--rosa-coral);
+  color: var(--blanco);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 2px 10px;
+  box-shadow: var(--sombra);
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
    Mini KPIs (panel de pedidos)
    -------------------------------------------------------------------------- */
 .mini-kpis {

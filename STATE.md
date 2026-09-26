@@ -120,6 +120,44 @@
 
 ---
 
+### Fase 5 — Alertas visuales, gráfico de tendencias y protección térmica
+
+**Estado:** ✅ Completada (26/09/2026)
+
+**Objetivos de la fase:**
+
+- Mostrar de un vistazo estados de alerta en los KPI de infraestructura.
+- Dibujar la evolución temporal (2 h) de temperatura y CPU usando el nuevo
+  array `history` de `status.json`.
+- Proteger la Orange Pi (sin disipador físico) deteniendo el kiosco local.
+
+**Entregables:**
+
+- [x] `style.css` — nuevas clases de alerta en las tarjetas:
+      `.kpi-card.warning` (borde y acento en Amarillo Limón `#F1D077`) y
+      `.kpi-card.danger` (borde y acento en Rosa Coral `#FF8FA3` + badge
+      `⚠ Aviso`).
+- [x] `app.js` — reglas dinámicas y umbrales documentados (`ALERT_RULES`):
+      temperatura `≥80 °C → danger`, `≥70 °C → warning`; CPU/RAM/Disco
+      `≥85 % → danger`, `≥70 % → warning`. Se aplican con `applyKpiAlert()`
+      y se limpian cuando no hay datos.
+- [x] `index.html` + `app.js` — el Panel 3 sustituye el gráfico de barras
+      «Uso de recursos» por una **línea de tendencia dual** Chart.js
+      (`#chart-trend`, eje izquierdo °C / derecho %): temperatura y CPU de
+      las últimas 2 h a partir de `status.json → history` (máx. 24 puntos).
+- [x] Frontend desplegado en la Orange Pi (`/var/www/monli-kiosk`,
+      `www-data:www-data`), hashes `md5sum` verificados. Servido por HTTP 200
+      en `http://100.88.140.37:8080`.
+- [x] **Protección térmica temporal:** `monli-kiosk.service` detenido
+      (`systemctl stop`, estado `inactive`) y **conservado `enabled`** para
+      el futuro. Sin procesos Xorg/Chromium activos.
+
+**Nota:** el histórico lo genera `observability.sh` (ver `monli-barr`, Fase 10)
+cada 5 min en `/opt/monli/status_history.tsv`; los valores instantáneos siguen
+disponibles en las claves `cpu`/`memory`/`disk`/`temperature_celsius`.
+
+---
+
 ## Historial de fases
 
 | Fase | Descripción                                          | Estado        |
@@ -129,6 +167,7 @@
 | —    | Integración `status.json` de la Orange Pi            | ✅ Completada (dentro de la Fase 2) |
 | 3    | Datos de demostración + rollback + versionado de Nginx | ✅ Completada |
 | 4    | Modo Kiosk, autoarranque del navegador y cierre       | ✅ Completada |
+| 5    | Alertas visuales, gráfico de tendencias (2 h) y protección térmica | ✅ Completada |
 
 ---
 
@@ -136,11 +175,10 @@
 
 - El backend (Dolibarr) está cerrado y operativo.
 - El acceso a la API se realiza con la cabecera `DOLAPIKEY`.
-- **Datos actuales:** la BBDD de Dolibarr contiene **3 terceros y 1 cliente**,
-  más **datos de demostración** de la Fase 3: **3 pedidos y 2 facturas** con
-  prefijo `DEMO-` (150 € / 320 € / 85 €) fechados en el T3 2026, que permiten
-  validar KPIs, gráfico de barras y tabla de pedidos. Se eliminan en cualquier
-  momento con `clean_demo_data.sh`.
+- **Datos actuales:** la BBDD de Dolibarr contiene **3 terceros y 1 cliente**.
+  Los **datos de demostración** de la Fase 3 (3 pedidos y 2 facturas `DEMO-`)
+  fueron **eliminados** el 26/09/2026 con `clean_demo_data.sh`; no queda ningún
+  registro `DEMO-` ni líneas/enlaces huérfanos.
 
 ### Correcciones aplicadas en el backend (Orange Pi) durante la Fase 2
 
@@ -164,14 +202,16 @@ Ambos cambios son de solo lectura y no alteran datos de negocio.
 
 ### Próximos pasos sugeridos
 
-- **Kiosco desplegado y funcional.** El dashboard se sirve en
-  `http://127.0.0.1:8080` y Chromium arranca a pantalla completa mediante
-  `monli-kiosk.service`.
+- **Kiosco desplegado y funcional, ahora detenido temporalmente.** El dashboard
+  se sirve en `http://127.0.0.1:8080`; Chromium arranca a pantalla completa
+  mediante `monli-kiosk.service` (habilitado). El servicio está **parado** por
+  protección térmica hasta que la Orange Pi tenga disipador:
+  `sudo systemctl start monli-kiosk.service`.
 - Retirar los datos de demostración cuando ya no sean necesarios:
   `sudo /opt/monli/scripts/clean_demo_data.sh` (necesita leer
-  `/opt/monli/.env`).
-- Observar/endurecer el kiosco: `Restart=on-failure` ya reinicia Chromium si
-  se cae; se pueden añadir alertas visuales por `temperature_celsius`,
-  `disk.usage_percent` y `backup_status`.
+  `/opt/monli/.env`). **Ya ejecutado.**
+- **Alertas y tendencias implementadas:** badges `.warning`/`.danger` por
+  umbral y gráfico de línea de temperatura+CPU (2 h) alimentado por
+  `status.json → history`.
 - Versionar futuras modificaciones de los Server Blocks a partir de
   `monli-kiosk/nginx/monli-kiosk.conf` y `monli-barr/nginx/monli-barr.conf`.

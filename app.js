@@ -145,6 +145,44 @@ function setHealthBadge(id, stateName, text) {
 }
 
 /* --------------------------------------------------------------------------
+   Alertas visuales de los KPI de infraestructura
+   -------------------------------------------------------------------------- */
+/* Reglas: temperatura >=80 °C -> danger, >=70 °C -> warning.
+   CPU / RAM / Disco: >=85 % -> danger, >=70 % -> warning. */
+const ALERT_RULES = {
+  temperature: { warning: 70, danger: 80 },
+  percentage: { warning: 70, danger: 85 },
+};
+
+/**
+ * Devuelve el nivel de alerta ('danger' | 'warning' | null) para un valor.
+ * @param {number|string|null|undefined} value
+ * @param {{warning:number, danger:number}} rule
+ * @returns {'danger'|'warning'|null}
+ */
+function alertLevel(value, rule) {
+  if (value === null || value === undefined || value === '') return null;
+  const v = Number(value);
+  if (!Number.isFinite(v)) return null;
+  if (v >= rule.danger) return 'danger';
+  if (v >= rule.warning) return 'warning';
+  return null;
+}
+
+/**
+ * Aplica o retira las clases de alerta (.warning / .danger) en una tarjeta KPI.
+ * @param {string} id
+ * @param {'danger'|'warning'|null} level
+ */
+function applyKpiAlert(id, level) {
+  const card = document.getElementById(id);
+  if (!card) return;
+  card.classList.toggle('warning', level === 'warning');
+  card.classList.toggle('danger', level === 'danger');
+  card.dataset.alert = level || 'ok';
+}
+
+/* --------------------------------------------------------------------------
    Fechas / trimestre
    -------------------------------------------------------------------------- */
 function getQuarter(date = new Date()) {
@@ -479,8 +517,12 @@ function renderInfra() {
     setKpi('metric-ram', '—', 'Sin datos');
     setKpi('metric-temp', '—', 'Sin datos');
     setKpi('metric-disk', '—', 'Sin datos');
+    applyKpiAlert('metric-cpu', null);
+    applyKpiAlert('metric-ram', null);
+    applyKpiAlert('metric-temp', null);
+    applyKpiAlert('metric-disk', null);
     setHealthBadge('health-status', 'err', 'No disponible');
-    renderInfraChart(null);
+    renderTrendChart(null);
     return;
   }
 
@@ -524,32 +566,73 @@ function renderInfra() {
 
   setHealthBadge('health-status', 'ok', 'OK');
 
-  renderInfraChart({ cpu, ram, disk });
+  /* Alertas visuales según umbrales. */
+  applyKpiAlert('metric-temp', alertLevel(temp, ALERT_RULES.temperature));
+  applyKpiAlert('metric-cpu', alertLevel(cpu, ALERT_RULES.percentage));
+  applyKpiAlert('metric-ram', alertLevel(ram, ALERT_RULES.percentage));
+  applyKpiAlert('metric-disk', alertLevel(disk, ALERT_RULES.percentage));
+
+  renderTrendChart(sys.history);
 }
 
-/** Crea o actualiza el gráfico de uso de recursos. */
-function renderInfraChart(values) {
-  const canvas = $('#chart-infra');
+/**
+ * Crea o actualiza la línea de tendencia (últimas 2 h) con la temperatura y
+ * el uso de CPU a partir del array `history` de status.json.
+ * @param {Array<{timestamp:string,cpu_pct:number,ram_pct:number,temp_c:number|null}>|null} history
+ */
+function renderTrendChart(history) {
+  const canvas = $('#chart-trend');
   if (!canvas || !window.Chart) return;
 
-  const emptyMsg = $('#chart-infra-empty');
-  if (emptyMsg) emptyMsg.hidden = Boolean(values);
+  const entries = Array.isArray(history) ? history.slice(-24) : [];
+  const hasData = entries.length > 0;
 
-  const data = values
-    ? {
-        labels: ['CPU', 'Memoria', 'Disco'],
-        datasets: [
-          {
-            label: 'Uso (%)',
-            data: [values.cpu, values.ram, values.disk].map((v) => Number(v.toFixed(1))),
-            backgroundColor: ['rgba(118, 204, 182, 0.85)', 'rgba(189, 237, 245, 0.9)', 'rgba(217, 180, 238, 0.9)'],
-            borderColor: ['#76CCB6', '#8FD8E4', '#C79FE3'],
-            borderWidth: 1,
-            borderRadius: 10,
-          },
-        ],
-      }
-    : { labels: [], datasets: [] };
+  const emptyMsg = $('#chart-trend-empty');
+  if (emptyMsg) emptyMsg.hidden = hasData;
+
+  const labels = entries.map((entry) => {
+    const date = new Date(entry.timestamp);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  });
+
+  const toNumber = (value) =>
+    value === null || value === undefined || value === '' ? null : Number(value);
+
+  const temperatures = entries.map((entry) => toNumber(entry.temp_c));
+  const cpuValues = entries.map((entry) => toNumber(entry.cpu_pct));
+
+  const data = {
+    labels,
+    datasets: [
+      {
+        label: 'Temperatura (°C)',
+        data: temperatures,
+        borderColor: '#FF8FA3',
+        backgroundColor: 'rgba(255, 143, 163, 0.14)',
+        fill: true,
+        tension: 0.35,
+        spanGaps: true,
+        pointRadius: 2,
+        pointHoverRadius: 4,
+        borderWidth: 2,
+        yAxisID: 'yTemp',
+      },
+      {
+        label: 'CPU (%)',
+        data: cpuValues,
+        borderColor: '#76CCB6',
+        backgroundColor: 'rgba(118, 204, 182, 0.12)',
+        fill: true,
+        tension: 0.35,
+        spanGaps: true,
+        pointRadius: 2,
+        pointHoverRadius: 4,
+        borderWidth: 2,
+        yAxisID: 'yPct',
+      },
+    ],
+  };
 
   if (state.charts.infra) {
     state.charts.infra.data = data;
@@ -558,26 +641,43 @@ function renderInfraChart(values) {
   }
 
   state.charts.infra = new Chart(canvas, {
-    type: 'bar',
+    type: 'line',
     data,
     options: {
-      indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { display: false },
+        legend: {
+          position: 'bottom',
+          labels: { usePointStyle: true, boxWidth: 8, padding: 16, font: { weight: '600' } },
+        },
         tooltip: {
-          callbacks: { label: (ctx) => `${ctx.parsed.x} %` },
+          callbacks: {
+            label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y}${ctx.dataset.yAxisID === 'yTemp' ? ' °C' : ' %'}`,
+          },
         },
       },
       scales: {
         x: {
+          grid: { display: false },
+          ticks: { maxTicksLimit: 8, font: { weight: '600' } },
+        },
+        yTemp: {
+          position: 'left',
+          beginAtZero: false,
+          suggestedMin: 40,
+          suggestedMax: 90,
+          grid: { color: 'rgba(85, 96, 122, 0.08)' },
+          ticks: { callback: (v) => `${v}°C` },
+        },
+        yPct: {
+          position: 'right',
           beginAtZero: true,
           max: 100,
-          grid: { color: 'rgba(85, 96, 122, 0.08)' },
+          grid: { display: false },
           ticks: { callback: (v) => `${v}%` },
         },
-        y: { grid: { display: false }, ticks: { font: { weight: '600' } } },
       },
     },
   });
