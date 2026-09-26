@@ -2,9 +2,9 @@
 
 **Proyecto:** Monli Kiosk
 **Tipo:** Aplicación SPA ligera para pantalla/Kiosko
-**Versión del documento:** 0.1
+**Versión del documento:** 0.2
 **Fecha:** 26/09/2026
-**Estado:** Fase 1 — Scaffolding e inicialización del frontend
+**Estado:** Fase 2 — Integración de datos, Chart.js, carrusel y despliegue Nginx
 
 ---
 
@@ -43,6 +43,7 @@ contradicciones.
 | Marcado         | HTML5 semántico                     |
 | Estilos         | CSS3 (variables nativas, Grid, Flex)|
 | Lógica          | JavaScript (ES2020+, módulo global) |
+| Gráficos        | **Chart.js 4.4.4** (copia local en `assets/`) |
 | Tipografía      | Google Fonts — **Quicksand**        |
 | Datos remotos   | API REST de Dolibarr                |
 | Estado del host | `status.json` de la Orange Pi       |
@@ -76,9 +77,10 @@ contradicciones.
 monli-kiosk/
 ├── OPENSPEC.md        # Este documento: arquitectura y decisiones
 ├── STATE.md           # Estado del proyecto y fases
-├── index.html         # Estructura semántica del dashboard
+├── index.html         # Estructura semántica del dashboard (carrusel)
 ├── style.css          # Estilos y variables de marca
-├── app.js             # Lógica e inicialización
+├── app.js             # Lógica, integración de datos y carrusel
+├── assets/            # Logos de marca y Chart.js local
 ├── config.example.js  # Plantilla de configuración (versionada)
 └── config.js          # Configuración real con token (NO versionada)
 ```
@@ -87,13 +89,22 @@ monli-kiosk/
 
 ## 6. Estructura del dashboard (`index.html`)
 
-Layout semántico de una sola pantalla:
+Layout de una sola pantalla organizado como **carrusel de 3 paneles**
+conmutables automáticamente cada 15 s (pausable al mover el ratón o tocar la
+pantalla):
 
-1. **`<header>`** — logo Monli Limón y título del dashboard.
-2. **Grid de KPIs** (`<section>` con grid) — métricas de ventas:
-   ventas de hoy, ventas del mes, pedidos pendientes, facturación pendiente.
-3. **Pedidos recientes** (`<section>`) — listado/tabla de los últimos pedidos.
-4. **Estado Orange Pi** (`<aside>` / `<footer>`) — salud del dispositivo.
+1. **`<header>`** — logo Monli Limón, título del dashboard, badge de conexión
+   y marca de última actualización.
+2. **Panel 1 — Trimestre y finanzas:** KPIs de facturación (trimestre, mes,
+   pedidos del trimestre, facturación pendiente) y gráfico de barras Chart.js
+   con la evolución mensual del trimestre (facturado vs. pendiente).
+3. **Panel 2 — Pedidos en curso:** mini-KPIs y tabla de pedidos recientes
+   (referencia, cliente, fecha, importe y estado de procesamiento).
+4. **Panel 3 — Infraestructura & Web:** métricas de `status.json` (CPU, RAM,
+   disco, temperatura), gráfico de uso de recursos y estado de servicios
+   (API Dolibarr, `status.json` y backup con badge verde/rojo).
+5. **`<footer>`** — navegación del carrusel (puntos, flechas y estado
+   pausa/activo) y barra de progreso.
 
 ---
 

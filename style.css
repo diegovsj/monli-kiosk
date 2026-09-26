@@ -1,6 +1,7 @@
 /* ==========================================================================
    Monli Kiosk — Estilos
    Identidad visual Monli Limón (Guía Visual v0.2)
+   Fase 2: dashboard en carrusel de 3 paneles
    ========================================================================== */
 
 /* Tipografía principal de marca */
@@ -31,6 +32,7 @@
   --texto-tenue:    #A8B2C2;
   --borde:          #E8ECF1;
   --sombra:         0 8px 24px rgba(85, 96, 122, 0.08);
+  --sombra-hover:   0 14px 34px rgba(85, 96, 122, 0.14);
 
   /* Forma y ritmo */
   --radio-sm:       12px;
@@ -44,6 +46,10 @@
 
   /* Tipografía */
   --fuente:         'Quicksand', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Transiciones del carrusel */
+  --slide-ease:     cubic-bezier(0.22, 0.61, 0.36, 1);
+  --slide-dur:      650ms;
 }
 
 /* --------------------------------------------------------------------------
@@ -69,6 +75,7 @@ body {
   background: var(--nube);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  overflow: hidden;
 }
 
 h1,
@@ -83,28 +90,39 @@ img {
   display: block;
 }
 
+button {
+  font-family: inherit;
+}
+
 /* --------------------------------------------------------------------------
-   Layout general
+   Layout general (pantalla completa de kiosco)
    -------------------------------------------------------------------------- */
 .app-shell {
-  min-height: 100vh;
+  height: 100vh;
   display: grid;
-  grid-template-columns: 1fr 300px;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto 1fr auto auto;
   grid-template-areas:
-    'header header'
-    'main   status';
-  gap: var(--esp-4);
-  padding: var(--esp-4);
-  max-width: 1600px;
+    'header'
+    'error'
+    'carousel'
+    'nav'
+    'progress';
+  gap: var(--esp-2);
+  padding: var(--esp-3);
+  max-width: 1920px;
   margin: 0 auto;
 }
+
+.app-header       { grid-area: header; }
+.error-banner     { grid-area: error; }
+.carousel         { grid-area: carousel; }
+.carousel-nav     { grid-area: nav; }
+.carousel-progress { grid-area: progress; }
 
 /* --------------------------------------------------------------------------
    Header
    -------------------------------------------------------------------------- */
 .app-header {
-  grid-area: header;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -112,7 +130,7 @@ img {
   background: var(--blanco);
   border: 1px solid var(--borde);
   border-radius: var(--radio-lg);
-  padding: var(--esp-3) var(--esp-4);
+  padding: var(--esp-2) var(--esp-4);
   box-shadow: var(--sombra);
 }
 
@@ -123,49 +141,141 @@ img {
 }
 
 .brand__logo {
-  height: 48px;
+  height: 46px;
   width: auto;
 }
 
 .brand__title {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   color: var(--azul-pizarra);
 }
 
 .brand__subtitle {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--menta);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
 .header-meta__time {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--texto-suave);
   background: var(--nube);
   border: 1px solid var(--borde);
   border-radius: 999px;
   padding: var(--esp-1) var(--esp-2);
+  white-space: nowrap;
+}
+
+/* Badge de conexión general */
+.conn-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 4px 12px;
+  background: var(--nube);
+  border: 1px solid var(--borde);
+  color: var(--texto-suave);
+  white-space: nowrap;
+}
+
+.conn-badge[data-state='ok']   { background: rgba(116, 167, 122, 0.14); color: #4E7A54; border-color: rgba(116, 167, 122, 0.35); }
+.conn-badge[data-state='warn'] { background: rgba(241, 208, 119, 0.22); color: #8A6D1E; border-color: rgba(241, 208, 119, 0.5); }
+.conn-badge[data-state='err']  { background: rgba(255, 143, 163, 0.16); color: #C24A61; border-color: rgba(255, 143, 163, 0.4); }
+
+/* --------------------------------------------------------------------------
+   Banner de errores
+   -------------------------------------------------------------------------- */
+.error-banner {
+  background: rgba(255, 143, 163, 0.14);
+  border: 1px solid rgba(255, 143, 163, 0.45);
+  color: #B23A52;
+  border-radius: var(--radio-sm);
+  padding: var(--esp-1) var(--esp-2);
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 /* --------------------------------------------------------------------------
-   Main
+   Carrusel
    -------------------------------------------------------------------------- */
-.app-main {
-  grid-area: main;
-  display: flex;
-  flex-direction: column;
-  gap: var(--esp-4);
-  min-width: 0;
+.carousel {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
 }
 
-/* KPIs --------------------------------------------------------------------- */
+.slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: translateX(48px) scale(0.985);
+  transition: opacity var(--slide-dur) var(--slide-ease),
+              transform var(--slide-dur) var(--slide-ease);
+  pointer-events: none;
+}
+
+.slide.is-active {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  pointer-events: auto;
+}
+
+/* Sale hacia la izquierda cuando ya pasó */
+.slide.is-prev {
+  transform: translateX(-48px) scale(0.985);
+}
+
+.slide__grid {
+  height: 100%;
+  display: grid;
+  gap: var(--esp-3);
+}
+
+.slide__grid--finance {
+  grid-template-columns: minmax(320px, 1fr) 1.35fr;
+}
+
+.slide__grid--infra {
+  grid-template-columns: 1.35fr minmax(300px, 1fr);
+}
+
+.slide__stack {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+  min-height: 0;
+}
+
+.slide__stack > .panel {
+  flex: 1;
+  min-height: 0;
+}
+
+/* --------------------------------------------------------------------------
+   KPIs
+   -------------------------------------------------------------------------- */
 .kpis {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--esp-3);
+  align-content: stretch;
+}
+
+.kpis--infra {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .kpi-card {
@@ -176,17 +286,18 @@ img {
   box-shadow: var(--sombra);
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: var(--esp-1);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .kpi-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 30px rgba(85, 96, 122, 0.12);
+  box-shadow: var(--sombra-hover);
 }
 
 .kpi-card__label {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -194,34 +305,69 @@ img {
 }
 
 .kpi-card__value {
-  font-size: 2rem;
+  font-size: clamp(1.7rem, 2.6vw, 2.4rem);
   font-weight: 700;
   color: var(--azul-pizarra);
   line-height: 1.1;
 }
 
 .kpi-card__hint {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 500;
   color: var(--texto-suave);
 }
 
 /* Variante destacada con Menta (KPI principal) */
 .kpi-card--featured {
-  background: var(--menta);
+  background: linear-gradient(135deg, var(--menta) 0%, #67BFA9 100%);
   border-color: var(--menta);
 }
 
 .kpi-card--featured .kpi-card__label,
 .kpi-card--featured .kpi-card__hint {
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .kpi-card--featured .kpi-card__value {
   color: var(--blanco);
 }
 
-/* Paneles ------------------------------------------------------------------ */
+/* --------------------------------------------------------------------------
+   Mini KPIs (panel de pedidos)
+   -------------------------------------------------------------------------- */
+.mini-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--esp-3);
+}
+
+.mini-kpi {
+  background: var(--blanco);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  padding: var(--esp-2) var(--esp-3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-2);
+}
+
+.mini-kpi__label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+.mini-kpi__value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--azul-pizarra);
+}
+
+/* --------------------------------------------------------------------------
+   Paneles / tarjetas
+   -------------------------------------------------------------------------- */
 .panel {
   background: var(--blanco);
   border: 1px solid var(--borde);
@@ -230,36 +376,76 @@ img {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .panel__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--esp-3);
+  gap: var(--esp-2);
+  padding: var(--esp-2) var(--esp-3);
   border-bottom: 1px solid var(--borde);
 }
 
 .panel__title {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   color: var(--azul-pizarra);
+  display: flex;
+  align-items: baseline;
+  gap: var(--esp-1);
+}
+
+.panel__subtitle {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--texto-tenue);
 }
 
 .panel__badge {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: var(--azul-pizarra);
   background: var(--amarillo);
   border-radius: 999px;
   padding: 2px 12px;
+  white-space: nowrap;
 }
 
 .panel__body {
   padding: var(--esp-2) var(--esp-3) var(--esp-3);
-  overflow-x: auto;
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
 }
 
-/* Tabla de pedidos --------------------------------------------------------- */
+.panel__body--chart {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--esp-3);
+}
+
+.panel__body--chart canvas {
+  max-height: 100%;
+}
+
+.chart-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--esp-3);
+  color: var(--texto-tenue);
+  font-style: italic;
+}
+
+/* --------------------------------------------------------------------------
+   Tabla de pedidos
+   -------------------------------------------------------------------------- */
 .orders-table {
   width: 100%;
   border-collapse: collapse;
@@ -268,13 +454,16 @@ img {
 
 .orders-table th {
   text-align: left;
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--texto-tenue);
-  padding: var(--esp-2) var(--esp-2);
+  padding: var(--esp-2);
   border-bottom: 1px solid var(--borde);
+  position: sticky;
+  top: calc(-1 * var(--esp-2));
+  background: var(--blanco);
 }
 
 .orders-table td {
@@ -308,53 +497,26 @@ img {
   padding: 2px 10px;
   background: var(--aqua);
   color: var(--azul-pizarra);
+  white-space: nowrap;
 }
 
-.status-tag--pending {
-  background: var(--amarillo);
-}
-
-.status-tag--paid {
-  background: var(--menta);
-  color: var(--blanco);
-}
-
-.status-tag--cancelled {
-  background: var(--rosa-coral);
-  color: var(--blanco);
-}
+.status-tag--pending   { background: var(--amarillo); }
+.status-tag--process   { background: var(--melocoton); }
+.status-tag--paid      { background: var(--menta); color: var(--blanco); }
+.status-tag--cancelled { background: var(--rosa-coral); color: var(--blanco); }
+.status-tag--draft     { background: #EDEFF3; color: var(--texto-suave); }
 
 /* --------------------------------------------------------------------------
-   Estado de la Orange Pi (sidebar)
+   Estado de servicios
    -------------------------------------------------------------------------- */
-.system-status {
-  grid-area: status;
-  background: var(--blanco);
-  border: 1px solid var(--borde);
-  border-radius: var(--radio);
-  box-shadow: var(--sombra);
-  padding: var(--esp-3);
-  align-self: start;
-  position: sticky;
-  top: var(--esp-4);
-}
-
-.system-status__title {
-  font-size: 0.95rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--texto-tenue);
-  margin-bottom: var(--esp-3);
-}
-
-.system-status__list {
+.status-list {
   list-style: none;
   display: flex;
   flex-direction: column;
   gap: var(--esp-2);
 }
 
-.system-status__item {
+.status-list__item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -363,22 +525,38 @@ img {
   border-bottom: 1px solid var(--nube);
 }
 
-.system-status__item:last-child {
+.status-list__item:last-child {
   border-bottom: none;
   padding-bottom: 0;
 }
 
-.system-status__label {
+.status-list__label {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--texto-suave);
 }
 
-.system-status__value {
+.status-list__value {
   font-size: 0.9rem;
   font-weight: 700;
   color: var(--azul-pizarra);
+  text-align: right;
 }
+
+/* Badge de salud */
+.health-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 3px 12px;
+  background: #EDEFF3;
+  color: var(--texto-suave);
+  white-space: nowrap;
+}
+
+.health-badge[data-state='ok']   { background: rgba(116, 167, 122, 0.18); color: #4E7A54; }
+.health-badge[data-state='warn'] { background: rgba(241, 208, 119, 0.28); color: #8A6D1E; }
+.health-badge[data-state='err']  { background: rgba(255, 143, 163, 0.2);  color: #C24A61; }
 
 /* Indicador de conexión */
 .dot {
@@ -388,6 +566,7 @@ img {
   border-radius: 50%;
   margin-right: 6px;
   background: var(--texto-tenue);
+  flex: 0 0 auto;
 }
 
 .dot--ok   { background: var(--verde-hoja); }
@@ -395,20 +574,143 @@ img {
 .dot--err  { background: var(--rosa-coral); }
 
 /* --------------------------------------------------------------------------
-   Responsive (pantallas estrechas)
+   Navegación del carrusel
    -------------------------------------------------------------------------- */
-@media (max-width: 900px) {
+.carousel-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--esp-3);
+  background: var(--blanco);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-lg);
+  box-shadow: var(--sombra);
+  padding: var(--esp-1) var(--esp-3);
+}
+
+.carousel-nav__arrow {
+  border: none;
+  background: var(--nube);
+  color: var(--azul-pizarra);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.carousel-nav__arrow:hover {
+  background: var(--menta);
+  color: var(--blanco);
+  transform: scale(1.06);
+}
+
+.carousel-nav__dots {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-1);
+}
+
+.carousel-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: none;
+  background: #D8DEE7;
+  cursor: pointer;
+  transition: width 0.25s var(--slide-ease), background 0.25s ease;
+}
+
+.carousel-dot:hover {
+  background: var(--texto-tenue);
+}
+
+.carousel-dot.is-active {
+  width: 34px;
+  background: var(--menta);
+}
+
+.carousel-nav__state {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+  white-space: nowrap;
+}
+
+.carousel-nav__state[data-paused='false'] .dot { background: var(--verde-hoja); }
+.carousel-nav__state[data-paused='true']  .dot { background: var(--amarillo); }
+
+/* --------------------------------------------------------------------------
+   Barra de progreso del carrusel
+   -------------------------------------------------------------------------- */
+.carousel-progress {
+  height: 4px;
+  background: var(--borde);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.carousel-progress__bar {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--menta), var(--amarillo));
+  border-radius: 999px;
+}
+
+.carousel-progress__bar.is-animating {
+  animation: progress-fill var(--slide-interval, 15s) linear forwards;
+}
+
+.carousel-progress__bar.is-paused {
+  animation-play-state: paused;
+}
+
+@keyframes progress-fill {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+
+/* --------------------------------------------------------------------------
+   Utilidades
+   -------------------------------------------------------------------------- */
+[hidden] { display: none !important; }
+
+/* --------------------------------------------------------------------------
+   Responsive (pantallas estrechas / verticales)
+   -------------------------------------------------------------------------- */
+@media (max-width: 1100px) {
+  body { overflow: auto; }
+
   .app-shell {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      'header'
-      'main'
-      'status';
-    padding: var(--esp-3);
-    gap: var(--esp-3);
+    height: auto;
+    min-height: 100vh;
   }
 
-  .system-status {
-    position: static;
+  .carousel {
+    min-height: 620px;
   }
+
+  .slide__grid--finance,
+  .slide__grid--infra {
+    grid-template-columns: 1fr;
+  }
+
+  .kpis--infra {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .kpis,
+  .mini-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .brand__subtitle { display: none; }
+
+  .carousel-nav__state { display: none; }
 }

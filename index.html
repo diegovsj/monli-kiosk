@@ -14,6 +14,11 @@
     rel="stylesheet"
   />
 
+  <!-- Chart.js (copia local, funciona sin conexión a Internet) -->
+  <script src="assets/chart.umd.min.js" defer></script>
+
+  <link rel="icon" type="image/png" href="assets/logo-monli-64.png" />
+
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -35,95 +40,203 @@
       </div>
 
       <div class="header-meta">
+        <span id="conn-status" class="conn-badge" data-state="pending">
+          <span class="dot"></span>Conectando…
+        </span>
         <span id="last-update" class="header-meta__time">—</span>
       </div>
     </header>
 
-    <!-- ===================== CONTENIDO ===================== -->
-    <main class="app-main">
+    <!-- Banner de errores de datos -->
+    <div id="error-banner" class="error-banner" role="alert" hidden></div>
 
-      <!-- KPIs de ventas -->
-      <section class="kpis" aria-label="Indicadores de ventas">
-        <article class="kpi-card" id="kpi-sales-today">
-          <h2 class="kpi-card__label">Ventas de hoy</h2>
-          <p class="kpi-card__value" data-value>—</p>
-          <p class="kpi-card__hint" data-hint>Cargando…</p>
-        </article>
+    <!-- ===================== CARRUSEL ===================== -->
+    <main class="carousel" id="carousel" aria-live="polite">
 
-        <article class="kpi-card" id="kpi-sales-month">
-          <h2 class="kpi-card__label">Ventas del mes</h2>
-          <p class="kpi-card__value" data-value>—</p>
-          <p class="kpi-card__hint" data-hint>Cargando…</p>
-        </article>
+      <!-- ---------- PANEL 1: Trimestre y Finanzas ---------- -->
+      <section class="slide is-active" data-slide="0" aria-label="Trimestre y finanzas">
+        <div class="slide__grid slide__grid--finance">
+          <div class="kpis" aria-label="Indicadores del trimestre">
+            <article class="kpi-card kpi-card--featured" id="kpi-revenue-quarter">
+              <h2 class="kpi-card__label">Facturado en el trimestre</h2>
+              <p class="kpi-card__value" data-value>—</p>
+              <p class="kpi-card__hint" data-hint>Cargando…</p>
+            </article>
 
-        <article class="kpi-card" id="kpi-orders-pending">
-          <h2 class="kpi-card__label">Pedidos pendientes</h2>
-          <p class="kpi-card__value" data-value>—</p>
-          <p class="kpi-card__hint" data-hint>Cargando…</p>
-        </article>
+            <article class="kpi-card" id="kpi-revenue-month">
+              <h2 class="kpi-card__label">Facturado este mes</h2>
+              <p class="kpi-card__value" data-value>—</p>
+              <p class="kpi-card__hint" data-hint>Cargando…</p>
+            </article>
 
-        <article class="kpi-card" id="kpi-invoices-pending">
-          <h2 class="kpi-card__label">Facturas pendientes</h2>
-          <p class="kpi-card__value" data-value>—</p>
-          <p class="kpi-card__hint" data-hint>Cargando…</p>
-        </article>
-      </section>
+            <article class="kpi-card" id="kpi-orders-quarter">
+              <h2 class="kpi-card__label">Pedidos del trimestre</h2>
+              <p class="kpi-card__value" data-value>—</p>
+              <p class="kpi-card__hint" data-hint>Cargando…</p>
+            </article>
 
-      <!-- Pedidos recientes -->
-      <section class="panel orders" aria-label="Pedidos recientes">
-        <header class="panel__header">
-          <h2 class="panel__title">Pedidos recientes</h2>
-          <span id="orders-count" class="panel__badge">—</span>
-        </header>
+            <article class="kpi-card" id="kpi-invoices-pending">
+              <h2 class="kpi-card__label">Facturación pendiente</h2>
+              <p class="kpi-card__value" data-value>—</p>
+              <p class="kpi-card__hint" data-hint>Cargando…</p>
+            </article>
+          </div>
 
-        <div class="panel__body">
-          <table class="orders-table">
-            <thead>
-              <tr>
-                <th scope="col">Nº</th>
-                <th scope="col">Cliente</th>
-                <th scope="col">Fecha</th>
-                <th scope="col">Importe</th>
-                <th scope="col">Estado</th>
-              </tr>
-            </thead>
-            <tbody id="orders-body">
-              <tr class="orders-table__empty">
-                <td colspan="5">Sin datos todavía…</td>
-              </tr>
-            </tbody>
-          </table>
+          <article class="panel panel--chart">
+            <header class="panel__header">
+              <h2 class="panel__title">
+                Evolución trimestral <span id="quarter-label" class="panel__subtitle">—</span>
+              </h2>
+              <span id="quarter-badge" class="panel__badge">—</span>
+            </header>
+            <div class="panel__body panel__body--chart">
+              <canvas id="chart-quarter" role="img" aria-label="Gráfico de ventas trimestrales"></canvas>
+              <p id="chart-quarter-empty" class="chart-empty" hidden>Sin facturación registrada en este trimestre.</p>
+            </div>
+          </article>
         </div>
       </section>
+
+      <!-- ---------- PANEL 2: Pedidos en Curso ---------- -->
+      <section class="slide" data-slide="1" aria-label="Pedidos en curso">
+        <div class="slide__stack">
+          <div class="mini-kpis" aria-label="Resumen de pedidos">
+            <article class="mini-kpi">
+              <span class="mini-kpi__label">Pedidos recientes</span>
+              <span class="mini-kpi__value" id="orders-count">—</span>
+            </article>
+            <article class="mini-kpi">
+              <span class="mini-kpi__label">En proceso</span>
+              <span class="mini-kpi__value" id="orders-processing">—</span>
+            </article>
+            <article class="mini-kpi">
+              <span class="mini-kpi__label">Importe total</span>
+              <span class="mini-kpi__value" id="orders-total">—</span>
+            </article>
+          </div>
+
+          <article class="panel">
+            <header class="panel__header">
+              <h2 class="panel__title">Pedidos recientes</h2>
+              <span id="orders-badge" class="panel__badge">—</span>
+            </header>
+
+            <div class="panel__body">
+              <table class="orders-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Nº</th>
+                    <th scope="col">Cliente</th>
+                    <th scope="col">Fecha</th>
+                    <th scope="col">Importe</th>
+                    <th scope="col">Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="orders-body">
+                  <tr class="orders-table__empty">
+                    <td colspan="5">Sin datos todavía…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- ---------- PANEL 3: Infraestructura & Web ---------- -->
+      <section class="slide" data-slide="2" aria-label="Infraestructura y web">
+        <div class="slide__stack">
+          <div class="kpis kpis--infra" aria-label="Métricas del dispositivo">
+            <article class="kpi-card" id="metric-cpu">
+              <h2 class="kpi-card__label">CPU</h2>
+              <p class="kpi-card__value" data-value>—</p>
+              <p class="kpi-card__hint" data-hint>—</p>
+            </article>
+            <article class="kpi-card" id="metric-ram">
+              <h2 class="kpi-card__label">Memoria</h2>
+              <p class="kpi-card__value" data-value>—</p>
+              <p class="kpi-card__hint" data-hint>—</p>
+            </article>
+            <article class="kpi-card" id="metric-temp">
+              <h2 class="kpi-card__label">Temperatura</h2>
+              <p class="kpi-card__value" data-value>—</p>
+              <p class="kpi-card__hint" data-hint>—</p>
+            </article>
+            <article class="kpi-card" id="metric-disk">
+              <h2 class="kpi-card__label">Disco raíz</h2>
+              <p class="kpi-card__value" data-value>—</p>
+              <p class="kpi-card__hint" data-hint>—</p>
+            </article>
+          </div>
+
+          <div class="slide__grid slide__grid--infra">
+            <article class="panel panel--chart">
+              <header class="panel__header">
+                <h2 class="panel__title">Uso de recursos</h2>
+                <span id="infra-timestamp" class="panel__subtitle">—</span>
+              </header>
+              <div class="panel__body panel__body--chart">
+                <canvas id="chart-infra" role="img" aria-label="Gráfico de uso de CPU, memoria y disco"></canvas>
+                <p id="chart-infra-empty" class="chart-empty" hidden>status.json no disponible.</p>
+              </div>
+            </article>
+
+            <article class="panel panel--status">
+              <header class="panel__header">
+                <h2 class="panel__title">Servicios</h2>
+              </header>
+              <div class="panel__body">
+                <ul class="status-list">
+                  <li class="status-list__item">
+                    <span class="status-list__label">API Dolibarr</span>
+                    <span id="health-api" class="health-badge" data-state="pending">—</span>
+                  </li>
+                  <li class="status-list__item">
+                    <span class="status-list__label">status.json</span>
+                    <span id="health-status" class="health-badge" data-state="pending">—</span>
+                  </li>
+                  <li class="status-list__item">
+                    <span class="status-list__label">Backup</span>
+                    <span id="backup-badge" class="health-badge" data-state="pending">—</span>
+                  </li>
+                  <li class="status-list__item">
+                    <span class="status-list__label">Antigüedad backup</span>
+                    <span id="backup-age" class="status-list__value">—</span>
+                  </li>
+                  <li class="status-list__item">
+                    <span class="status-list__label">Activo desde</span>
+                    <span id="sys-uptime" class="status-list__value">—</span>
+                  </li>
+                </ul>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
     </main>
 
-    <!-- ===================== SIDEBAR / FOOTER: ESTADO ORANGE PI ===================== -->
-    <aside class="system-status" aria-label="Estado de la Orange Pi">
-      <h2 class="system-status__title">Estado del dispositivo</h2>
+    <!-- ===================== NAVEGACIÓN DEL CARRUSEL ===================== -->
+    <footer class="carousel-nav">
+      <button id="carousel-prev" class="carousel-nav__arrow" type="button" aria-label="Panel anterior">‹</button>
 
-      <ul class="system-status__list">
-        <li class="system-status__item">
-          <span class="system-status__label">Conexión</span>
-          <span id="sys-connection" class="system-status__value">—</span>
-        </li>
-        <li class="system-status__item">
-          <span class="system-status__label">Temperatura</span>
-          <span id="sys-temp" class="system-status__value">—</span>
-        </li>
-        <li class="system-status__item">
-          <span class="system-status__label">CPU</span>
-          <span id="sys-cpu" class="system-status__value">—</span>
-        </li>
-        <li class="system-status__item">
-          <span class="system-status__label">Memoria</span>
-          <span id="sys-ram" class="system-status__value">—</span>
-        </li>
-        <li class="system-status__item">
-          <span class="system-status__label">Activo desde</span>
-          <span id="sys-uptime" class="system-status__value">—</span>
-        </li>
-      </ul>
-    </aside>
+      <div id="carousel-dots" class="carousel-nav__dots" role="tablist" aria-label="Paneles">
+        <button class="carousel-dot is-active" type="button" data-goto="0" role="tab" aria-label="Panel 1: trimestre y finanzas"></button>
+        <button class="carousel-dot" type="button" data-goto="1" role="tab" aria-label="Panel 2: pedidos en curso"></button>
+        <button class="carousel-dot" type="button" data-goto="2" role="tab" aria-label="Panel 3: infraestructura y web"></button>
+      </div>
+
+      <button id="carousel-next" class="carousel-nav__arrow" type="button" aria-label="Panel siguiente">›</button>
+
+      <span id="carousel-state" class="carousel-nav__state" data-paused="false">
+        <span class="dot"></span><span id="carousel-state-text">Carrusel activo · 15 s</span>
+      </span>
+    </footer>
+
+    <!-- Barra de progreso de la diapositiva -->
+    <div class="carousel-progress" aria-hidden="true">
+      <div id="carousel-progress-bar" class="carousel-progress__bar"></div>
+    </div>
 
   </div>
 
