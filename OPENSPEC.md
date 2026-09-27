@@ -102,7 +102,9 @@ pantalla):
    (referencia, cliente, fecha, importe y estado de procesamiento).
 4. **Panel 3 — Infraestructura & Web:** métricas de `status.json` (CPU, RAM,
    disco, temperatura), gráfico de uso de recursos y estado de servicios
-   (API Dolibarr, `status.json` y backup con badge verde/rojo).
+   (API Dolibarr, `status.json`, puente WooCommerce Sync y backup con badge
+   verde/rojo). El badge del puente refleja `status.json → bridge_status`
+   (`OK`/`ERROR`), publicado por `observability.sh`.
 5. **`<footer>`** — navegación del carrusel (puntos, flechas y estado
    pausa/activo) y barra de progreso.
 

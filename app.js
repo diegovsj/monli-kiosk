@@ -522,6 +522,7 @@ function renderInfra() {
     applyKpiAlert('metric-temp', null);
     applyKpiAlert('metric-disk', null);
     setHealthBadge('health-status', 'err', 'No disponible');
+    setHealthBadge('bridge-badge', 'err', 'Sin datos');
     renderTrendChart(null);
     return;
   }
@@ -562,6 +563,29 @@ function renderInfra() {
     ageEl.textContent = sys.backup_age_hours !== undefined && sys.backup_age_hours !== null
       ? `${Number(sys.backup_age_hours).toFixed(1)} h`
       : '—';
+  }
+
+  // Puente WooCommerce ➔ Dolibarr (bridge_status). Se considera ERROR tanto si
+  // observability.sh lo marca explícitamente como si la clave no existe (JSON
+  // antiguo o bridge sin desplegar): sin dato no hay garantía de salud.
+  const bridgeStatus = String(sys.bridge_status || '').toUpperCase();
+  const bridgeEl = $('#bridge-badge');
+  if (bridgeStatus === 'OK') {
+    setHealthBadge('bridge-badge', 'ok', 'OK');
+    if (bridgeEl) bridgeEl.title = 'Puente WooCommerce ➔ Dolibarr operativo';
+  } else {
+    setHealthBadge('bridge-badge', 'err', bridgeStatus === 'ERROR' ? 'ERROR' : 'Sin datos');
+    if (bridgeEl) {
+      bridgeEl.title = sys.bridge_age_minutes !== undefined && sys.bridge_age_minutes !== null
+        ? `Puente con error · último log hace ${Number(sys.bridge_age_minutes).toFixed(1)} min`
+        : 'Puente con error o sin datos en status.json';
+    }
+    console.error(
+      `[Monli Kiosk] ¡Atención! Puente WooCommerce (bridge_status=${bridgeStatus || 'ausente'})` +
+        (sys.bridge_age_minutes !== undefined && sys.bridge_age_minutes !== null
+          ? ` — último log hace ${Number(sys.bridge_age_minutes).toFixed(1)} min.`
+          : '.')
+    );
   }
 
   setHealthBadge('health-status', 'ok', 'OK');

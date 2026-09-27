@@ -1,6 +1,6 @@
 # Monli Kiosk — Estado del Proyecto
 
-**Última actualización:** 27/09/2026
+**Última actualización:** 27/09/2026 (Fase 8: badge de alerta del puente WooCommerce Sync en el Panel 3)
 
 ---
 
@@ -226,6 +226,35 @@ GA4 en un `iframe` también falla (`X-Frame-Options`/CSP + sesión interactiva).
 
 ---
 
+### Fase 8 — Badge de alerta del puente WooCommerce en el Panel 3
+
+**Estado:** ✅ Completada (27/09/2026)
+
+**Objetivos de la fase:**
+
+- Vigilar el puente WooCommerce ➔ Dolibarr desde el dashboard, aprovechando el
+  nuevo campo `bridge_status` que publica `observability.sh` (ver `monli-barr`,
+  Fase 13).
+- Señalizar en rojo cualquier fallo del puente (cron atascado o errores en el
+  log) y avisar por consola.
+
+**Entregables:**
+
+- [x] `index.html` — nuevo ítem «Puente Web (WooCommerce Sync)» en la lista de
+      **Servicios** del Panel 3, con badge `id="bridge-badge"`.
+- [x] `app.js` — `renderInfra()` lee `sys.bridge_status`:
+      - `OK` → badge verde (`.health-badge[data-state='ok']`).
+      - `ERROR` o **clave ausente** → badge rojo (`data-state='err'`, Rosa Coral)
+        con `title` explicativo y `console.error(...)`.
+      - Sin datos de `status.json` → badge rojo «Sin datos».
+- [x] Reutiliza las clases de badge existentes (`.health-badge[data-state='err']`),
+      sin cambios en `style.css`.
+- [x] Frontend desplegado en la Orange Pi (`/var/www/monli-kiosk/app.js` e
+      `index.html` como `www-data:www-data 644`), hashes `md5sum` verificados;
+      `http://100.88.140.37:8080/` → `HTTP 200`.
+
+---
+
 ## Historial de fases
 
 | Fase | Descripción                                          | Estado        |
@@ -238,6 +267,7 @@ GA4 en un `iframe` también falla (`X-Frame-Options`/CSP + sesión interactiva).
 | 5    | Alertas visuales, gráfico de tendencias (2 h) y protección térmica | ✅ Completada |
 | 6    | Desactivación definitiva del kiosco local (servidor 100% headless) | ✅ Completada |
 | 7    | Sección de Google Analytics 4 en el Panel 3                     | ✅ Completada |
+| 8    | Badge de alerta del puente WooCommerce en el Panel 3            | ✅ Completada |
 
 ---
 
