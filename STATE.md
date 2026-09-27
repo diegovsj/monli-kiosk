@@ -1,6 +1,6 @@
 # Monli Kiosk — Estado del Proyecto
 
-**Última actualización:** 26/09/2026
+**Última actualización:** 27/09/2026
 
 ---
 
@@ -158,6 +158,45 @@ disponibles en las claves `cpu`/`memory`/`disk`/`temperature_celsius`.
 
 ---
 
+### Fase 6 — Desactivación definitiva del kiosco local (servidor 100% headless)
+
+**Estado:** ✅ Completada (27/09/2026)
+
+**Objetivos de la fase:**
+
+- Convertir la Orange Pi en un **servidor headless**: sin servidor gráfico local,
+  sin navegador y sin puntero, dedicado a servir el backend Dolibarr y el
+  dashboard por Nginx.
+- Minimizar el consumo y la temperatura de la placa (sin disipador físico).
+
+**Entregables:**
+
+- [x] `sudo systemctl disable --now monli-kiosk.service` ejecutado. El servicio
+      quedó **`disabled` + `inactive`** de forma permanente (ya no arranca con
+      el sistema). Xorg, Chromium, `startx` y `unclutter` **no están en
+      ejecución** (`ps aux | grep -E 'chromium|Xorg|unclutter|startx'` → vacío).
+- [x] El dashboard sigue **plenamente accesible vía Nginx**:
+      `http://100.88.140.37:8080/` → `HTTP 200`. El backend
+      (`http://100.88.140.37/`) y `status.json` → `HTTP 200`.
+- [x] **Temperatura estable ~50–55 °C** en reposo (antes, con el kiosco
+      arrancado, oscilaba entre 55 y 80 °C; la Fase 5 llegó a registrar 73,6 °C
+      de pico). El descenso se confirma en `status.json → history`.
+
+**Despliegue:**
+
+| Elemento            | Valor                                                         |
+|---------------------|---------------------------------------------------------------|
+| Servicio systemd    | `monli-kiosk.service` → **disabled + inactive**               |
+| Procesos gráficos   | Ninguno (Xorg/Chromium/unclutter detenidos)                   |
+| Dashboard           | `http://100.88.140.37:8080` (Nginx, `HTTP 200`)               |
+| Reactivación        | `sudo systemctl enable --now monli-kiosk.service`             |
+
+**Nota:** los artefactos del kiosco (`start_kiosk.sh` y `monli-kiosk.service`)
+se conservan versionados en `monli-kiosk/kiosk/` por si en el futuro se instala
+disipador y se quiere recuperar el modo pantalla.
+
+---
+
 ## Historial de fases
 
 | Fase | Descripción                                          | Estado        |
@@ -168,6 +207,7 @@ disponibles en las claves `cpu`/`memory`/`disk`/`temperature_celsius`.
 | 3    | Datos de demostración + rollback + versionado de Nginx | ✅ Completada |
 | 4    | Modo Kiosk, autoarranque del navegador y cierre       | ✅ Completada |
 | 5    | Alertas visuales, gráfico de tendencias (2 h) y protección térmica | ✅ Completada |
+| 6    | Desactivación definitiva del kiosco local (servidor 100% headless) | ✅ Completada |
 
 ---
 
@@ -202,11 +242,12 @@ Ambos cambios son de solo lectura y no alteran datos de negocio.
 
 ### Próximos pasos sugeridos
 
-- **Kiosco desplegado y funcional, ahora detenido temporalmente.** El dashboard
-  se sirve en `http://127.0.0.1:8080`; Chromium arranca a pantalla completa
-  mediante `monli-kiosk.service` (habilitado). El servicio está **parado** por
-  protección térmica hasta que la Orange Pi tenga disipador:
-  `sudo systemctl start monli-kiosk.service`.
+- **Orange Pi 100 % headless.** El dashboard se sirve en
+  `http://100.88.140.37:8080` (y en local `http://127.0.0.1:8080`) a través de
+  Nginx, pero el kiosco gráfico local está **desactivado de forma permanente**
+  (`monli-kiosk.service` → `disabled` + `inactive`, sin Xorg/Chromium). El
+  servicio se conserva versionado en `monli-kiosk/kiosk/` y puede reactivarse
+  con `sudo systemctl enable --now monli-kiosk.service` si se instala disipador.
 - Retirar los datos de demostración cuando ya no sean necesarios:
   `sudo /opt/monli/scripts/clean_demo_data.sh` (necesita leer
   `/opt/monli/.env`). **Ya ejecutado.**
