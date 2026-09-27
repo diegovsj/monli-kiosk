@@ -1,6 +1,6 @@
 # Monli Kiosk — Estado del Proyecto
 
-**Última actualización:** 27/09/2026 (Fase 9: banner global de alertas y Panel 4 «Tráfico Web» con datos mock)
+**Última actualización:** 27/09/2026 (Fase 10: GA4 en vivo vía proxy `analytics.json` y alineación del banner con el badge del puente)
 
 ---
 
@@ -311,6 +311,44 @@ real de GA4 (proxy con cuenta de servicio; ver `OPENSPEC.md` §9).
 
 ---
 
+### Fase 10 — GA4 en vivo (proxy `analytics.json`) y alineación del banner
+
+**Estado:** ✅ Completada (27/09/2026)
+
+**Objetivos de la fase:**
+
+- Eliminar el mock del Panel 4 «Tráfico Web» y alimentarlo con datos reales de
+  GA4 mediante un proxy en la Orange Pi (sin exponer credenciales al frontend).
+- Alinear la regla del banner global con el badge de salud del Panel 3: el
+  puente WooCommerce debe marcar ERROR también si la clave `bridge_status`
+  está **ausente**.
+
+**Entregables:**
+
+- [x] `app.js` — `updateGlobalBanner()` pasa de
+      `bridge_status === 'ERROR'` a `bridge_status !== 'OK'`: así marca error
+      tanto si el puente está caído como si la clave no existe (status.json
+      antiguo o puente sin desplegar), igual que el badge `renderInfra()`.
+      Probado con 4 combinaciones (OK / ERROR / ausente / minúsculas).
+- [x] `app.js` — `fetchAnalyticsData()` lee de `./analytics.json` con
+      `cache: 'no-store'` y cae al `MOCK_ANALYTICS` si el fichero no existe o
+      falla (degradación elegante); el badge del panel muestra «En vivo» o
+      «Datos demo» según `data.source`.
+- [x] Frontend desplegado en la Orange Pi (`/var/www/monli-kiosk`,
+      `www-data:www-data 644`, directorios 755), hashes `md5sum` verificados.
+- [x] `analytics.json` servido por Nginx (mismo origen, `HTTP 200
+      application/json`) y consumido por el Panel 4.
+- [x] La implementación del proxy vive en `monli-barr/scripts/fetch_ga4.py`
+      (ver `monli-barr/STATE.md`, Fase 14).
+
+**Nota:** la propiedad GA4 `556138617` no tiene tráfico recolectado todavía, por
+lo que `analytics.json` devuelve 0 en todas las métricas. No es un fallo de
+permisos: la cuenta de servicio está autorizada y una propiedad inexistente
+devuelve `403 PERMISSION_DENIED`. En cuanto el flujo `G-563BSRVELH` acumule
+visitas, el Panel 4 las mostrará sin cambios adicionales.
+
+---
+
 ## Historial de fases
 
 | Fase | Descripción                                          | Estado        |
@@ -325,6 +363,7 @@ real de GA4 (proxy con cuenta de servicio; ver `OPENSPEC.md` §9).
 | 7    | Sección de Google Analytics 4 en el Panel 3                     | ✅ Completada |
 | 8    | Badge de alerta del puente WooCommerce en el Panel 3            | ✅ Completada |
 | 9    | Banner global de alertas + Panel 4 «Tráfico Web» (mock GA4)     | ✅ Completada |
+| 10   | GA4 en vivo (proxy `analytics.json`) + alineación del banner    | ✅ Completada |
 
 ---
 
@@ -371,9 +410,10 @@ Ambos cambios son de solo lectura y no alteran datos de negocio.
 - **Alertas y tendencias implementadas:** badges `.warning`/`.danger` por
   umbral y gráfico de línea de temperatura+CPU (2 h) alimentado por
   `status.json → history`.
-- **UI del kiosco completa (Fase 9).** Banner global de alertas y Panel 4
-  «Tráfico Web» operativos. El Panel 4 usa todavía datos mock; queda pendiente
-  la integración real de GA4 mediante un proxy `analytics.json` en la Orange Pi
-  (ver `OPENSPEC.md` §9), que sólo requiere reemplazar `fetchAnalyticsData()`.
+- **UI del kiosco completa y con datos reales (Fase 10).** Banner global de
+  alertas (regla del puente alineada con el badge: `bridge_status !== 'OK'` →
+  error) y Panel 4 «Tráfico Web» alimentado por el proxy GA4
+  (`/var/www/monli-kiosk/analytics.json`, cron de root cada hora). El mock se
+  conserva solo como *fallback* si el fichero falta o falla.
 - Versionar futuras modificaciones de los Server Blocks a partir de
   `monli-kiosk/nginx/monli-kiosk.conf` y `monli-barr/nginx/monli-barr.conf`.

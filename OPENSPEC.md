@@ -161,13 +161,21 @@ y firma del lado servidor; no existe endpoint público anónimo. Además, embebe
 el panel de GA4 en un `<iframe>` falla por `X-Frame-Options`/CSP y porque
 requiere sesión interactiva de Google.
 
-**Decisión:** en el **Panel 3** se muestra una sección estática (`panel--ga`)
+**Decisión (Fase 7):** en el **Panel 3** se muestra una sección estática (`panel--ga`)
 que documenta la limitación, identifica la propiedad (`556138617`) y el flujo
 (`G-563BSRVELH`), y ofrece un enlace directo
 (`https://analytics.google.com/.../p556138617/...`) para consultar GA4 en la web.
-No se implementa servidor proxy ni OAuth.
 
-**Mejora futura (si se necesita en el dashboard):** proxy en la Orange Pi que
-use una cuenta de servicio de Google con la GA4 Data API y exponga un JSON
-propio (p. ej. `ga.json`) análogo a `status.json`, sin exponer credenciales al
-frontend.
+**Implementación (Fase 10):** la mejora futura ya está desplegada. Un proxy en la
+Orange Pi (`monli-barr/scripts/fetch_ga4.py`) usa la cuenta de servicio de
+Google (`/opt/monli/ga4_credentials.json`, `root:root 600`) para consultar la
+GA4 Data API y publicar un JSON propio en el webroot del kiosco
+(`/var/www/monli-kiosk/analytics.json`, `www-data:www-data 644`). El cron de
+`root` lo ejecuta cada hora (`0 * * * *`). El **Panel 4 «Tráfico Web»** consume
+ese fichero mediante `fetchAnalyticsData()` (`./analytics.json`), sin exponer
+credenciales al frontend; si el fichero falta o falla, cae al mock (badge «Datos
+demo»). El diseño sin dependencias pesadas (JWT RS256 firmado con `openssl` +
+`curl`) es el más estable en Armbian. Detalle en `monli-barr/scripts/README.md`.
+
+La sección estática del Panel 3 (`panel--ga`) se conserva como acceso directo a
+la interfaz web de GA4.

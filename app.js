@@ -195,8 +195,10 @@ function applyKpiAlert(id, level) {
  * Construye el contenido del banner global de alertas.
  *
  * - REGLA 1 (Sistema, crítica · Rosa Coral): temperatura ≥ 80 °C, CPU o RAM
- *   ≥ 85 %, `backup_status === 'ERROR'` o `bridge_status === 'ERROR'`
- *   (también si `status.json` no responde).
+ *   ≥ 85 %, `backup_status === 'ERROR'` o `bridge_status` ausente o distinto de
+ *   `'OK'` (también si `status.json` no responde). La regla del puente queda
+ *   alineada con el badge del Panel 3 (`renderInfra`): sin dato no hay garantía
+ *   de salud y se marca ERROR.
  * - REGLA 2 (Negocio, aviso · Amarillo Limón): pedidos de Dolibarr en estado
  *   Borrador/Validado (nuevos, pendientes de gestionar).
  *
@@ -234,7 +236,11 @@ function updateGlobalBanner() {
     if (String(sys.backup_status || '').toUpperCase() === 'ERROR') {
       reasons.push('Backup con Error');
     }
-    if (String(sys.bridge_status || '').toUpperCase() === 'ERROR') {
+    // Alineado con el badge del Panel 3: el puente se considera caído tanto si
+    // observability.sh lo marca como ERROR como si la clave bridge_status está
+    // ausente (status.json antiguo o puente sin desplegar): sin dato no hay
+    // garantía de salud.
+    if (String(sys.bridge_status || '').toUpperCase() !== 'OK') {
       reasons.push('Puente Web Caído');
     }
 
@@ -802,10 +808,10 @@ function renderTrendChart(history) {
 
 /* --------------------------------------------------------------------------
    Fuente de datos 3 — Analítica web (Panel 4)
-   Los datos actuales son FICTICIOS (mock) para maquetar el panel. La función
-   `fetchAnalyticsData()` está preparada para sustituirse por una llamada real
-   (p. ej. `./analytics.json` servido por un proxy GA4 en la Orange Pi; ver
-   OPENSPEC §9) sin tocar el resto del render.
+   Los datos provienen de `./analytics.json`, que publica el proxy de GA4
+   (`/opt/monli/scripts/fetch_ga4.py`) en el propio webroot del kiosco. Si el
+   proxy aún no está desplegado o falla, se cae al mock `MOCK_ANALYTICS`
+   (degradación elegante) y el badge del panel lo indica como «Datos demo».
    -------------------------------------------------------------------------- */
 const MOCK_ANALYTICS = {
   source: 'mock',
@@ -825,20 +831,25 @@ const MOCK_ANALYTICS = {
 };
 
 /**
- * Obtiene los datos de analítica web.
- *
- * MOCK actual: devuelve `MOCK_ANALYTICS`. Cuando exista el proxy de GA4 en la
- * Orange Pi, sustituir el `return` por la llamada real:
- *
- *   const res = await fetch('./analytics.json', { cache: 'no-store' });
- *   if (!res.ok) throw new Error(`HTTP ${res.status}`);
- *   return res.json();
- *
+ * Obtiene los datos de analítica web desde el proxy de GA4 (`./analytics.json`)
+ * y, si no está disponible, devuelve el mock para no romper el panel.
  * @returns {Promise<Object>}
  */
 async function fetchAnalyticsData() {
-  // TODO(GA4): cambiar por la llamada real cuando exista `analytics.json`.
-  return MOCK_ANALYTICS;
+  try {
+    const res = await fetch('./analytics.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!data || typeof data !== 'object') throw new Error('JSON inválido');
+    console.info('[Monli Kiosk] analytics.json recibido.', data);
+    return data;
+  } catch (error) {
+    console.warn(
+      '[Monli Kiosk] analytics.json no disponible; se usa el mock del Panel 4:',
+      error.message
+    );
+    return MOCK_ANALYTICS;
+  }
 }
 
 /** Formatea un número entero con separadores de miles (es-ES). */
