@@ -208,6 +208,65 @@ button {
 }
 
 /* --------------------------------------------------------------------------
+   Banner global persistente de alertas (sistema y negocio)
+   Fijo en la parte inferior, por encima del carrusel.
+   - --critical: Rosa Coral #FF8FA3 → errores críticos de sistema
+   - --warning : Amarillo Limón #F1D077 → pedidos nuevos / avisos
+   -------------------------------------------------------------------------- */
+.global-alert-banner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+}
+
+.global-alert-banner.hidden {
+  display: none;
+}
+
+.global-alert-banner__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--esp-2);
+  padding: var(--esp-2) var(--esp-4);
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-align: center;
+  box-shadow: 0 -8px 24px rgba(85, 96, 122, 0.16);
+  animation: banner-rise 420ms var(--slide-ease) both;
+  pointer-events: auto;
+}
+
+.global-alert-banner__item--critical {
+  background: var(--rosa-coral);
+  color: var(--blanco);
+  animation:
+    banner-rise 420ms var(--slide-ease) both,
+    banner-pulse 2.2s ease-in-out 420ms infinite;
+}
+
+.global-alert-banner__item--warning {
+  background: var(--amarillo);
+  color: #6B5312;
+}
+
+@keyframes banner-rise {
+  from { transform: translateY(110%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes banner-pulse {
+  0%, 100% { box-shadow: 0 -8px 24px rgba(85, 96, 122, 0.16); }
+  50%      { box-shadow: 0 -8px 24px rgba(255, 143, 163, 0.55), 0 0 0 4px rgba(255, 143, 163, 0.28); }
+}
+
+/* --------------------------------------------------------------------------
    Carrusel
    -------------------------------------------------------------------------- */
 .carousel {
@@ -276,6 +335,10 @@ button {
 
 .kpis--infra {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.kpis--analytics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .kpi-card {
@@ -811,13 +874,15 @@ button {
     grid-template-columns: 1fr;
   }
 
-  .kpis--infra {
+  .kpis--infra,
+  .kpis--analytics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 640px) {
   .kpis,
+  .kpis--analytics,
   .mini-kpis {
     grid-template-columns: 1fr;
   }

@@ -50,6 +50,14 @@
     <!-- Banner de errores de datos -->
     <div id="error-banner" class="error-banner" role="alert" hidden></div>
 
+    <!-- Banner global persistente de alertas (sistema y negocio) -->
+    <div
+      id="global-alert-banner"
+      class="global-alert-banner hidden"
+      role="status"
+      aria-live="assertive"
+    ></div>
+
     <!-- ===================== CARRUSEL ===================== -->
     <main class="carousel" id="carousel" aria-live="polite">
 
@@ -247,6 +255,46 @@
         </div>
       </section>
 
+      <!-- ---------- PANEL 4: Tráfico Web (Analítica) ---------- -->
+      <section class="slide" data-slide="3" aria-label="Tráfico web">
+        <div class="slide__stack">
+          <div class="kpis kpis--analytics" aria-label="Indicadores de tráfico web">
+            <article class="kpi-card kpi-card--featured" id="kpi-users-today">
+              <h2 class="kpi-card__label">Usuarios hoy</h2>
+              <p class="kpi-card__value" data-value>—</p>
+              <p class="kpi-card__hint" data-hint>Usuarios activos</p>
+            </article>
+            <article class="kpi-card" id="kpi-sessions">
+              <h2 class="kpi-card__label">Sesiones</h2>
+              <p class="kpi-card__value" data-value>—</p>
+              <p class="kpi-card__hint" data-hint>Últimos 7 días</p>
+            </article>
+            <article class="kpi-card" id="kpi-pageviews">
+              <h2 class="kpi-card__label">Páginas vistas</h2>
+              <p class="kpi-card__value" data-value>—</p>
+              <p class="kpi-card__hint" data-hint>Últimos 7 días</p>
+            </article>
+          </div>
+
+          <article class="panel panel--chart">
+            <header class="panel__header">
+              <h2 class="panel__title">
+                Visitantes semanales <span id="analytics-label" class="panel__subtitle">—</span>
+              </h2>
+              <span id="analytics-badge" class="panel__badge">Datos demo</span>
+            </header>
+            <div class="panel__body panel__body--chart">
+              <canvas id="chart-analytics" role="img" aria-label="Evolución de visitantes y sesiones de los últimos 7 días"></canvas>
+              <p id="chart-analytics-empty" class="chart-empty" hidden>Sin datos de analítica web.</p>
+            </div>
+          </article>
+
+          <!-- Nota: los datos actuales son de demostración (mock). Se sustituirán
+               por una llamada real a `fetchAnalyticsData()` cuando exista un
+               proxy GA4/analytics.json en la Orange Pi (ver OPENSPEC §9). -->
+        </div>
+      </section>
+
     </main>
 
     <!-- ===================== NAVEGACIÓN DEL CARRUSEL ===================== -->
@@ -257,6 +305,7 @@
         <button class="carousel-dot is-active" type="button" data-goto="0" role="tab" aria-label="Panel 1: trimestre y finanzas"></button>
         <button class="carousel-dot" type="button" data-goto="1" role="tab" aria-label="Panel 2: pedidos en curso"></button>
         <button class="carousel-dot" type="button" data-goto="2" role="tab" aria-label="Panel 3: infraestructura y web"></button>
+        <button class="carousel-dot" type="button" data-goto="3" role="tab" aria-label="Panel 4: tráfico web"></button>
       </div>
 
       <button id="carousel-next" class="carousel-nav__arrow" type="button" aria-label="Panel siguiente">›</button>

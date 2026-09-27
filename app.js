@@ -1,7 +1,8 @@
 /* ==========================================================================
    Monli Kiosk — Lógica de la aplicación
-   Fase 2: integración con la API REST de Dolibarr, gráficos Chart.js,
-   carrusel automático de 3 paneles e integración de status.json.
+   Integración con la API REST de Dolibarr, gráficos Chart.js, integración de
+   status.json y carrusel automático de 4 paneles (finanzas, pedidos,
+   infraestructura y tráfico web). Incluye banner global de alertas.
    ========================================================================== */
 
 'use strict';
@@ -28,6 +29,10 @@ const ORDER_STATUS = {
   '3':  { label: 'Cerrado',   cls: 'status-tag--paid' },
 };
 
+/* Pedidos que cuentan como "nuevos / pendientes de gestionar" en Dolibarr:
+   0 = Borrador, 1 = Validado (equivalente a Nuevo/Pendiente). */
+const NEW_ORDER_STATUSES = ['0', '1'];
+
 /* Estado interno de la aplicación. */
 const state = {
   configOk: Boolean(CONFIG.DOLIBARR_API_URL && CONFIG.DOLIBARR_API_TOKEN),
@@ -37,7 +42,8 @@ const state = {
   invoices: [],
   thirdparties: [],
   system: null,
-  charts: { quarter: null, infra: null },
+  analytics: null,
+  charts: { quarter: null, infra: null, analytics: null },
   carousel: { index: 0, paused: false, timer: null },
 };
 
@@ -180,6 +186,93 @@ function applyKpiAlert(id, level) {
   card.classList.toggle('warning', level === 'warning');
   card.classList.toggle('danger', level === 'danger');
   card.dataset.alert = level || 'ok';
+}
+
+/* --------------------------------------------------------------------------
+   Banner global persistente de alertas (sistema + negocio)
+   -------------------------------------------------------------------------- */
+/**
+ * Construye el contenido del banner global de alertas.
+ *
+ * - REGLA 1 (Sistema, crítica · Rosa Coral): temperatura ≥ 80 °C, CPU o RAM
+ *   ≥ 85 %, `backup_status === 'ERROR'` o `bridge_status === 'ERROR'`
+ *   (también si `status.json` no responde).
+ * - REGLA 2 (Negocio, aviso · Amarillo Limón): pedidos de Dolibarr en estado
+ *   Borrador/Validado (nuevos, pendientes de gestionar).
+ *
+ * Las alertas de sistema tienen prioridad y, si coexisten con las de negocio,
+ * se muestran apiladas (sistema arriba). Sin alertas, el banner se oculta.
+ */
+function updateGlobalBanner() {
+  const banner = document.getElementById('global-alert-banner');
+  if (!banner) return;
+
+  const alerts = [];
+  const sys = state.system;
+
+  /* REGLA 1 — Sistema (crítico). */
+  if (!sys) {
+    alerts.push({
+      level: 'critical',
+      text: '⚠️ ALERTA DE SISTEMA: Sin datos de status.json (la Orange Pi no responde)',
+    });
+  } else {
+    const reasons = [];
+    const temp = Number(sys.temperature_celsius);
+    const cpu = Number(sys.cpu?.usage_percent);
+    const ram = Number(sys.memory?.usage_percent);
+
+    if (Number.isFinite(temp) && temp >= ALERT_RULES.temperature.danger) {
+      reasons.push(`Temperatura Crítica (${temp.toFixed(1)} °C)`);
+    }
+    if (Number.isFinite(cpu) && cpu >= ALERT_RULES.percentage.danger) {
+      reasons.push(`CPU al ${cpu.toFixed(0)} %`);
+    }
+    if (Number.isFinite(ram) && ram >= ALERT_RULES.percentage.danger) {
+      reasons.push(`RAM al ${ram.toFixed(0)} %`);
+    }
+    if (String(sys.backup_status || '').toUpperCase() === 'ERROR') {
+      reasons.push('Backup con Error');
+    }
+    if (String(sys.bridge_status || '').toUpperCase() === 'ERROR') {
+      reasons.push('Puente Web Caído');
+    }
+
+    if (reasons.length) {
+      alerts.push({
+        level: 'critical',
+        text: `⚠️ ALERTA DE SISTEMA: ${reasons.join(' · ')}`,
+      });
+    }
+  }
+
+  /* REGLA 2 — Negocio: pedidos nuevos/pendientes. */
+  const pendingOrders = state.orders.filter((ord) =>
+    NEW_ORDER_STATUSES.includes(String(ord.statut))
+  );
+  if (pendingOrders.length) {
+    alerts.push({
+      level: 'warning',
+      text:
+        pendingOrders.length === 1
+          ? '📦 Tienes 1 pedido nuevo pendiente de gestionar'
+          : `📦 Tienes ${pendingOrders.length} pedidos nuevos pendientes de gestionar`,
+    });
+  }
+
+  if (!alerts.length) {
+    banner.classList.add('hidden');
+    banner.innerHTML = '';
+    return;
+  }
+
+  banner.classList.remove('hidden');
+  banner.innerHTML = alerts
+    .map(
+      (alert) =>
+        `<div class="global-alert-banner__item global-alert-banner__item--${alert.level}">${escapeHtml(alert.text)}</div>`
+    )
+    .join('');
 }
 
 /* --------------------------------------------------------------------------
@@ -708,17 +801,168 @@ function renderTrendChart(history) {
 }
 
 /* --------------------------------------------------------------------------
+   Fuente de datos 3 — Analítica web (Panel 4)
+   Los datos actuales son FICTICIOS (mock) para maquetar el panel. La función
+   `fetchAnalyticsData()` está preparada para sustituirse por una llamada real
+   (p. ej. `./analytics.json` servido por un proxy GA4 en la Orange Pi; ver
+   OPENSPEC §9) sin tocar el resto del render.
+   -------------------------------------------------------------------------- */
+const MOCK_ANALYTICS = {
+  source: 'mock',
+  updated: new Date().toISOString(),
+  usersToday: 128,
+  sessions7d: 742,
+  pageviews7d: 1893,
+  weekly: [
+    { label: 'Lun', visitors: 96,  sessions: 121 },
+    { label: 'Mar', visitors: 118, sessions: 143 },
+    { label: 'Mié', visitors: 134, sessions: 167 },
+    { label: 'Jue', visitors: 121, sessions: 152 },
+    { label: 'Vie', visitors: 158, sessions: 196 },
+    { label: 'Sáb', visitors: 87,  sessions: 108 },
+    { label: 'Dom', visitors: 72,  sessions: 95  },
+  ],
+};
+
+/**
+ * Obtiene los datos de analítica web.
+ *
+ * MOCK actual: devuelve `MOCK_ANALYTICS`. Cuando exista el proxy de GA4 en la
+ * Orange Pi, sustituir el `return` por la llamada real:
+ *
+ *   const res = await fetch('./analytics.json', { cache: 'no-store' });
+ *   if (!res.ok) throw new Error(`HTTP ${res.status}`);
+ *   return res.json();
+ *
+ * @returns {Promise<Object>}
+ */
+async function fetchAnalyticsData() {
+  // TODO(GA4): cambiar por la llamada real cuando exista `analytics.json`.
+  return MOCK_ANALYTICS;
+}
+
+/** Formatea un número entero con separadores de miles (es-ES). */
+function formatNumber(value) {
+  return new Intl.NumberFormat('es-ES').format(Number(value) || 0);
+}
+
+/** Render del Panel 4: KPIs de tráfico y gráfico de visitantes semanales. */
+function renderAnalytics(data = state.analytics) {
+  if (!data) return;
+
+  setKpi('kpi-users-today', formatNumber(data.usersToday), 'Usuarios activos hoy');
+  setKpi('kpi-sessions', formatNumber(data.sessions7d), 'Últimos 7 días');
+  setKpi('kpi-pageviews', formatNumber(data.pageviews7d), 'Últimos 7 días');
+
+  const label = $('#analytics-label');
+  if (label) label.textContent = 'últimos 7 días';
+
+  const badge = $('#analytics-badge');
+  if (badge) badge.textContent = data.source === 'mock' ? 'Datos demo' : 'En vivo';
+
+  renderAnalyticsChart(data.weekly);
+}
+
+/**
+ * Crea o actualiza el gráfico de líneas de visitantes y sesiones (Menta y
+ * Amarillo Limón) a partir de la serie semanal.
+ * @param {Array<{label:string,visitors:number,sessions:number}>} weekly
+ */
+function renderAnalyticsChart(weekly) {
+  const canvas = $('#chart-analytics');
+  if (!canvas || !window.Chart) return;
+
+  const rows = Array.isArray(weekly) ? weekly : [];
+  const hasData = rows.length > 0;
+
+  const emptyMsg = $('#chart-analytics-empty');
+  if (emptyMsg) emptyMsg.hidden = hasData;
+
+  const data = {
+    labels: rows.map((row) => row.label),
+    datasets: [
+      {
+        label: 'Visitantes',
+        data: rows.map((row) => Number(row.visitors)),
+        borderColor: '#76CCB6',
+        backgroundColor: 'rgba(118, 204, 182, 0.16)',
+        fill: true,
+        tension: 0.35,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        borderWidth: 2.5,
+      },
+      {
+        label: 'Sesiones',
+        data: rows.map((row) => Number(row.sessions)),
+        borderColor: '#F1D077',
+        backgroundColor: 'rgba(241, 208, 119, 0.18)',
+        fill: true,
+        tension: 0.35,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        borderWidth: 2.5,
+      },
+    ],
+  };
+
+  if (state.charts.analytics) {
+    state.charts.analytics.data = data;
+    state.charts.analytics.update();
+    return;
+  }
+
+  state.charts.analytics = new Chart(canvas, {
+    type: 'line',
+    data,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { usePointStyle: true, boxWidth: 8, padding: 16, font: { weight: '600' } },
+        },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.dataset.label}: ${formatNumber(ctx.parsed.y)}`,
+          },
+        },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { weight: '600' } } },
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(85, 96, 122, 0.08)' },
+          ticks: { precision: 0 },
+        },
+      },
+    },
+  });
+}
+
+/* --------------------------------------------------------------------------
    Render general
    -------------------------------------------------------------------------- */
 async function render() {
   setLastUpdate();
 
-  await Promise.all([fetchDolibarrData(), fetchSystemStatus()]);
+  const [analytics] = await Promise.all([
+    fetchAnalyticsData(),
+    fetchDolibarrData(),
+    fetchSystemStatus(),
+  ]);
+  state.analytics = analytics;
 
   const metrics = computeMetrics();
   renderFinance(metrics);
   renderOrders(metrics);
   renderInfra();
+  renderAnalytics();
+
+  // Banner global de alertas (sistema + negocio).
+  updateGlobalBanner();
 
   // Estado de conexión general.
   if (!state.configOk) {
@@ -848,7 +1092,7 @@ function configureChartsDefaults() {
 }
 
 async function init() {
-  console.log('%c🍋 Monli Kiosk', 'color:#76CCB6;font-weight:bold;font-size:14px;', 'inicializado (Fase 2).');
+  console.log('%c🍋 Monli Kiosk', 'color:#76CCB6;font-weight:bold;font-size:14px;', 'inicializado (4 paneles + banner global de alertas).');
 
   configureChartsDefaults();
   setupCarousel();
@@ -871,6 +1115,9 @@ window.MonliKiosk = {
   computeMetrics,
   fetchDolibarrData,
   fetchSystemStatus,
+  fetchAnalyticsData,
+  renderAnalytics,
+  updateGlobalBanner,
   dolibarrGet,
   state,
 };

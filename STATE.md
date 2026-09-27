@@ -1,6 +1,6 @@
 # Monli Kiosk — Estado del Proyecto
 
-**Última actualización:** 27/09/2026 (Fase 8: badge de alerta del puente WooCommerce Sync en el Panel 3)
+**Última actualización:** 27/09/2026 (Fase 9: banner global de alertas y Panel 4 «Tráfico Web» con datos mock)
 
 ---
 
@@ -255,6 +255,62 @@ GA4 en un `iframe` también falla (`X-Frame-Options`/CSP + sesión interactiva).
 
 ---
 
+### Fase 9 — Banner global de alertas y Panel 4 «Tráfico Web» (mock)
+
+**Estado:** ✅ Completada (27/09/2026)
+
+**Objetivos de la fase:**
+
+- Avisar de forma persistente y muy visible de incidencias de sistema y de
+  pedidos nuevos, por encima del carrusel de paneles.
+- Añadir un cuarto panel de analítica web («Tráfico Web») con datos de
+  demostración, dejando el código preparado para la integración real de GA4.
+- Retirar de la Orange Pi el backup temporal de WooCommerce para que Rclone no
+  lo sincronice indefinidamente.
+
+**Entregables:**
+
+- [x] **Limpieza Orange Pi:** eliminado
+      `/opt/monli/backups/woocommerce_content_backup_20260927.tar.gz` (mediante
+      `ssh diego@100.88.140.37`). Era un salvavidas temporal; se conservan los
+      backups legítimos `monli_backup_*.tar.gz` y `backup.log`.
+- [x] `index.html` — contenedor persistente `#global-alert-banner` y cuarto
+      slide `data-slide="3"` **«Tráfico Web»** (KPIs *Usuarios hoy*,
+      *Sesiones* y *Páginas vistas* + `canvas#chart-analytics`), con su cuarto
+      punto en la navegación del carrusel.
+- [x] `style.css` — `.global-alert-banner` fijo en la parte inferior con
+      animación suave de entrada (`banner-rise`) y pulso en las alertas
+      críticas (`banner-pulse`); **Rosa Coral `#FF8FA3`** para errores de
+      sistema y **Amarillo Limón `#F1D077`** para avisos de pedidos;
+      `.kpis--analytics` y ajustes responsive.
+- [x] `app.js` — `updateGlobalBanner()`:
+      - **REGLA 1 (Sistema, crítica):** temperatura ≥ 80 °C, CPU/RAM ≥ 85 %,
+        `backup_status === 'ERROR'` o `bridge_status === 'ERROR'` (y también
+        `status.json` no disponible) → banner crítico Rosa Coral con el motivo
+        concreto.
+      - **REGLA 2 (Negocio, aviso):** pedidos de Dolibarr en estado
+        **Borrador (0)** o **Validado (1)** (`NEW_ORDER_STATUSES = ['0','1']`)
+        → banner Amarillo Limón «📦 Tienes X pedidos nuevos pendientes de
+        gestionar».
+      - Prioridad: las alertas de sistema se muestran **arriba**; si coexisten,
+        ambas se apilan. Sin alertas, el banner se oculta por completo.
+- [x] `app.js` — Panel 4 con `fetchAnalyticsData()` (mock `MOCK_ANALYTICS` de
+      7 días) y `renderAnalyticsChart()` (gráfico de líneas Chart.js en
+      **Menta `#76CCB6`** y **Amarillo Limón `#F1D077`**). Basta reemplazar el
+      `return` de `fetchAnalyticsData()` por la llamada a `analytics.json` del
+      proxy GA4, sin tocar el resto del render.
+- [x] El carrusel detecta dinámicamente las 4 diapositivas y los 4 puntos; la
+      rotación automática (15 s) no requirió cambios en `setupCarousel()`.
+- [x] **Verificación:** `node --check app.js` OK; prueba determinista del
+      banner con 6 combinaciones (todo OK, temperatura, backup+bridge,
+      negocio, sistema+negocio apiladas y sin `status.json`); `MOCK_ANALYTICS`
+      consumido correctamente por `renderAnalytics()`.
+
+**Nota:** La UI del kiosco queda **completa** a la espera de la integración
+real de GA4 (proxy con cuenta de servicio; ver `OPENSPEC.md` §9).
+
+---
+
 ## Historial de fases
 
 | Fase | Descripción                                          | Estado        |
@@ -268,6 +324,7 @@ GA4 en un `iframe` también falla (`X-Frame-Options`/CSP + sesión interactiva).
 | 6    | Desactivación definitiva del kiosco local (servidor 100% headless) | ✅ Completada |
 | 7    | Sección de Google Analytics 4 en el Panel 3                     | ✅ Completada |
 | 8    | Badge de alerta del puente WooCommerce en el Panel 3            | ✅ Completada |
+| 9    | Banner global de alertas + Panel 4 «Tráfico Web» (mock GA4)     | ✅ Completada |
 
 ---
 
@@ -314,5 +371,9 @@ Ambos cambios son de solo lectura y no alteran datos de negocio.
 - **Alertas y tendencias implementadas:** badges `.warning`/`.danger` por
   umbral y gráfico de línea de temperatura+CPU (2 h) alimentado por
   `status.json → history`.
+- **UI del kiosco completa (Fase 9).** Banner global de alertas y Panel 4
+  «Tráfico Web» operativos. El Panel 4 usa todavía datos mock; queda pendiente
+  la integración real de GA4 mediante un proxy `analytics.json` en la Orange Pi
+  (ver `OPENSPEC.md` §9), que sólo requiere reemplazar `fetchAnalyticsData()`.
 - Versionar futuras modificaciones de los Server Blocks a partir de
   `monli-kiosk/nginx/monli-kiosk.conf` y `monli-barr/nginx/monli-barr.conf`.
