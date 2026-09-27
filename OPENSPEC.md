@@ -147,3 +147,25 @@ Ocre Miel `#C99A4A`.
 - `config.example.js` es la plantilla versionada, **sin credenciales reales**.
 - Ningún token ni URL privada debe aparecer en `index.html`, `app.js`,
   `OPENSPEC.md`, `STATE.md` ni en el historial de git.
+
+---
+
+## 9. Google Analytics 4 (decisión)
+
+**¿Se pueden consumir métricas de GA4 (usuarios activos) desde el navegador sin
+OAuth ni cuenta de servicio?** **No.** La *Google Analytics Data API* exige
+autenticación (OAuth2 de usuario o *service account* con acceso a la propiedad)
+y firma del lado servidor; no existe endpoint público anónimo. Además, embeber
+el panel de GA4 en un `<iframe>` falla por `X-Frame-Options`/CSP y porque
+requiere sesión interactiva de Google.
+
+**Decisión:** en el **Panel 3** se muestra una sección estática (`panel--ga`)
+que documenta la limitación, identifica la propiedad (`556138617`) y el flujo
+(`G-563BSRVELH`), y ofrece un enlace directo
+(`https://analytics.google.com/.../p556138617/...`) para consultar GA4 en la web.
+No se implementa servidor proxy ni OAuth.
+
+**Mejora futura (si se necesita en el dashboard):** proxy en la Orange Pi que
+use una cuenta de servicio de Google con la GA4 Data API y exponga un JSON
+propio (p. ej. `ga.json`) análogo a `status.json`, sin exponer credenciales al
+frontend.

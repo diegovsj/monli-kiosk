@@ -197,6 +197,35 @@ disipador y se quiere recuperar el modo pantalla.
 
 ---
 
+### Fase 7 — Sección de Google Analytics 4 en el Panel 3
+
+**Estado:** ✅ Completada (27/09/2026)
+
+**Objetivos de la fase:**
+
+- Determinar si el dashboard puede consumir métricas de GA4 (usuarios activos)
+  sin OAuth ni cuenta de servicio en el backend.
+- Si no es posible, ofrecer en el Panel 3 un acceso/documentación a GA4 sin
+  bloquear el dashboard.
+
+**Hallazgo:** **No es posible.** La *Google Analytics Data API* requiere OAuth2
+o *service account* con acceso a la propiedad; no hay endpoint anónimo. Embeber
+GA4 en un `iframe` también falla (`X-Frame-Options`/CSP + sesión interactiva).
+
+**Entregables:**
+
+- [x] `index.html` — nueva tarjeta `panel--ga` en el **Panel 3** con la
+      limitación, las etiquetas de propiedad (`556138617`) y flujo
+      (`G-563BSRVELH`), y un enlace a *Google Analytics Dashboard*
+      (`https://analytics.google.com/analytics/web/#/p556138617/reports/reportinghub`).
+- [x] `style.css` — estilos `.panel--ga` / `.ga-panel` (paleta de marca).
+- [x] `OPENSPEC.md` §9 — decisión técnica y vía futura (proxy con cuenta de
+      servicio que publique un `ga.json`, análogo a `status.json`).
+- [x] Frontend desplegado en la Orange Pi (`/var/www/monli-kiosk`, `www-data`
+      `644`) con `HTTP 200` en `http://100.88.140.37:8080`.
+
+---
+
 ## Historial de fases
 
 | Fase | Descripción                                          | Estado        |
@@ -208,6 +237,7 @@ disipador y se quiere recuperar el modo pantalla.
 | 4    | Modo Kiosk, autoarranque del navegador y cierre       | ✅ Completada |
 | 5    | Alertas visuales, gráfico de tendencias (2 h) y protección térmica | ✅ Completada |
 | 6    | Desactivación definitiva del kiosco local (servidor 100% headless) | ✅ Completada |
+| 7    | Sección de Google Analytics 4 en el Panel 3                     | ✅ Completada |
 
 ---
 
