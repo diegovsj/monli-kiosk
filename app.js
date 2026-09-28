@@ -810,30 +810,15 @@ function renderTrendChart(history) {
    Fuente de datos 3 — Analítica web (Panel 4)
    Los datos provienen de `./analytics.json`, que publica el proxy de GA4
    (`/opt/monli/scripts/fetch_ga4.py`) en el propio webroot del kiosco. Si el
-   proxy aún no está desplegado o falla, se cae al mock `MOCK_ANALYTICS`
-   (degradación elegante) y el badge del panel lo indica como «Datos demo».
+   fichero no existe, falla o viene a cero, el Panel 4 muestra un estado vacío
+   elegante («Esperando recolección de datos...»); NUNCA se inyectan datos
+   falsos.
    -------------------------------------------------------------------------- */
-const MOCK_ANALYTICS = {
-  source: 'mock',
-  updated: new Date().toISOString(),
-  usersToday: 128,
-  sessions7d: 742,
-  pageviews7d: 1893,
-  weekly: [
-    { label: 'Lun', visitors: 96,  sessions: 121 },
-    { label: 'Mar', visitors: 118, sessions: 143 },
-    { label: 'Mié', visitors: 134, sessions: 167 },
-    { label: 'Jue', visitors: 121, sessions: 152 },
-    { label: 'Vie', visitors: 158, sessions: 196 },
-    { label: 'Sáb', visitors: 87,  sessions: 108 },
-    { label: 'Dom', visitors: 72,  sessions: 95  },
-  ],
-};
 
 /**
- * Obtiene los datos de analítica web desde el proxy de GA4 (`./analytics.json`)
- * y, si no está disponible, devuelve el mock para no romper el panel.
- * @returns {Promise<Object>}
+ * Obtiene los datos de analítica web desde el proxy de GA4 (`./analytics.json`).
+ * Devuelve `null` si el fichero no existe, falla o no es un objeto válido.
+ * @returns {Promise<Object|null>}
  */
 async function fetchAnalyticsData() {
   try {
@@ -844,12 +829,32 @@ async function fetchAnalyticsData() {
     console.info('[Monli Kiosk] analytics.json recibido.', data);
     return data;
   } catch (error) {
-    console.warn(
-      '[Monli Kiosk] analytics.json no disponible; se usa el mock del Panel 4:',
-      error.message
-    );
-    return MOCK_ANALYTICS;
+    console.warn('[Monli Kiosk] analytics.json no disponible.', error.message);
+    return null;
   }
+}
+
+/**
+ * Determina si el payload de analítica contiene tráfico real. Un fichero válido
+ * pero todo a cero (propiedad GA4 aún sin visitas) se considera «sin datos».
+ * @param {Object|null} data
+ * @returns {boolean}
+ */
+function analyticsHasData(data) {
+  if (!data || typeof data !== 'object') return false;
+  const totals =
+    (Number(data.usersToday) || 0) +
+    (Number(data.users7d) || 0) +
+    (Number(data.sessions7d) || 0) +
+    (Number(data.pageviews7d) || 0);
+  const weekly = Array.isArray(data.weekly)
+    ? data.weekly.reduce(
+        (acc, row) =>
+          acc + (Number(row.visitors) || 0) + (Number(row.sessions) || 0),
+        0
+      )
+    : 0;
+  return totals > 0 || weekly > 0;
 }
 
 /** Formatea un número entero con separadores de miles (es-ES). */
@@ -859,17 +864,29 @@ function formatNumber(value) {
 
 /** Render del Panel 4: KPIs de tráfico y gráfico de visitantes semanales. */
 function renderAnalytics(data = state.analytics) {
-  if (!data) return;
+  const hasData = analyticsHasData(data);
+
+  const label = $('#analytics-label');
+  if (label) label.textContent = hasData ? 'últimos 7 días' : 'sin datos';
+
+  const badge = $('#analytics-badge');
+  if (badge) {
+    badge.textContent = hasData ? 'En vivo' : 'Esperando datos';
+    badge.dataset.state = hasData ? 'ok' : 'idle';
+  }
+
+  if (!hasData) {
+    // Estado vacío elegante: nunca se inyectan datos falsos.
+    setKpi('kpi-users-today', '—', 'Esperando recolección de datos...');
+    setKpi('kpi-sessions', '—', 'Sin tráfico registrado');
+    setKpi('kpi-pageviews', '—', 'Sin tráfico registrado');
+    renderAnalyticsChart([]);
+    return;
+  }
 
   setKpi('kpi-users-today', formatNumber(data.usersToday), 'Usuarios activos hoy');
   setKpi('kpi-sessions', formatNumber(data.sessions7d), 'Últimos 7 días');
   setKpi('kpi-pageviews', formatNumber(data.pageviews7d), 'Últimos 7 días');
-
-  const label = $('#analytics-label');
-  if (label) label.textContent = 'últimos 7 días';
-
-  const badge = $('#analytics-badge');
-  if (badge) badge.textContent = data.source === 'mock' ? 'Datos demo' : 'En vivo';
 
   renderAnalyticsChart(data.weekly);
 }
@@ -881,13 +898,27 @@ function renderAnalytics(data = state.analytics) {
  */
 function renderAnalyticsChart(weekly) {
   const canvas = $('#chart-analytics');
-  if (!canvas || !window.Chart) return;
+  const emptyMsg = $('#chart-analytics-empty');
 
   const rows = Array.isArray(weekly) ? weekly : [];
-  const hasData = rows.length > 0;
+  const hasData = rows.some(
+    (row) => (Number(row.visitors) || 0) + (Number(row.sessions) || 0) > 0
+  );
 
-  const emptyMsg = $('#chart-analytics-empty');
   if (emptyMsg) emptyMsg.hidden = hasData;
+  if (canvas) canvas.hidden = !hasData;
+
+  if (!hasData) {
+    // Sin serie real: se destruye cualquier gráfico previo y se muestra el
+    // estado vacío. Nunca se dibujan datos falsos.
+    if (state.charts.analytics) {
+      state.charts.analytics.destroy();
+      state.charts.analytics = null;
+    }
+    return;
+  }
+
+  if (!canvas || !window.Chart) return;
 
   const data = {
     labels: rows.map((row) => row.label),

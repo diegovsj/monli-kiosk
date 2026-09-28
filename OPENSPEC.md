@@ -2,9 +2,9 @@
 
 **Proyecto:** Monli Kiosk
 **Tipo:** Aplicación SPA ligera para pantalla/Kiosko
-**Versión del documento:** 0.2
-**Fecha:** 26/09/2026
-**Estado:** Fase 2 — Integración de datos, Chart.js, carrusel y despliegue Nginx
+**Versión del documento:** 1.0
+**Fecha:** 28/09/2026
+**Estado:** v1.0 — Auditoría final. Dashboard **100 % headless**, servido por **Nginx** y accesible vía **Tailscale**.
 
 ---
 
@@ -173,9 +173,31 @@ GA4 Data API y publicar un JSON propio en el webroot del kiosco
 (`/var/www/monli-kiosk/analytics.json`, `www-data:www-data 644`). El cron de
 `root` lo ejecuta cada hora (`0 * * * *`). El **Panel 4 «Tráfico Web»** consume
 ese fichero mediante `fetchAnalyticsData()` (`./analytics.json`), sin exponer
-credenciales al frontend; si el fichero falta o falla, cae al mock (badge «Datos
-demo»). El diseño sin dependencias pesadas (JWT RS256 firmado con `openssl` +
+credenciales al frontend. Si el fichero **falta, falla o viene a cero**, el Panel 4
+muestra un **estado vacío elegante** («Esperando recolección de datos...», badge
+«Esperando datos»). **Nunca se inyectan datos falsos** (no existe mock en el
+código). El diseño sin dependencias pesadas (JWT RS256 firmado con `openssl` +
 `curl`) es el más estable en Armbian. Detalle en `monli-barr/scripts/README.md`.
 
 La sección estática del Panel 3 (`panel--ga`) se conserva como acceso directo a
 la interfaz web de GA4.
+
+---
+
+## 10. Despliegue 100 % headless (Tailscale + Nginx)
+
+- **Servidor:** Orange Pi PC Plus (Armbian), **sin servidor gráfico local**: Xorg,
+  Chromium, `unclutter` y `startx` están desactivados (`monli-kiosk.service` →
+  `disabled` + `inactive`). El modo kiosco gráfico queda como artefacto
+  versionado en `kiosk/`, reactivable si se instala disipador.
+- **Nginx:** sirve el frontend estático en el puerto **8080**
+  (`root /var/www/monli-kiosk`), más `status.json` y `analytics.json` desde el
+  mismo origen. Dolibarr se sirve aparte por Nginx en el puerto 80.
+- **Tailscale:** acceso seguro a través de **CGNAT** sin abrir puertos; IP fija
+  `100.88.140.37` (DNS `monli-barr.tailb50aad.ts.net`). No hay exposición pública
+  del kiosco.
+- **Consumo:** al no ejecutar entorno gráfico, la placa baja su temperatura en
+  reposo (~50–55 °C) y libera RAM/CPU para Dolibarr y el proxy GA4.
+- **Sin datos falsos:** las únicas fuentes del dashboard son la API REST de
+  Dolibarr, `status.json` y `analytics.json`; cualquier ausencia de datos se
+  refleja como estado vacío o badge de error.

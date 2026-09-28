@@ -281,17 +281,17 @@
               <h2 class="panel__title">
                 Visitantes semanales <span id="analytics-label" class="panel__subtitle">—</span>
               </h2>
-              <span id="analytics-badge" class="panel__badge">Datos demo</span>
+              <span id="analytics-badge" class="panel__badge" data-state="idle">Esperando datos</span>
             </header>
             <div class="panel__body panel__body--chart">
               <canvas id="chart-analytics" role="img" aria-label="Evolución de visitantes y sesiones de los últimos 7 días"></canvas>
-              <p id="chart-analytics-empty" class="chart-empty" hidden>Sin datos de analítica web.</p>
+              <p id="chart-analytics-empty" class="chart-empty" hidden>Esperando recolección de datos...</p>
             </div>
           </article>
 
-          <!-- Nota: los datos actuales son de demostración (mock). Se sustituirán
-               por una llamada real a `fetchAnalyticsData()` cuando exista un
-               proxy GA4/analytics.json en la Orange Pi (ver OPENSPEC §9). -->
+          <!-- Datos reales servidos por el proxy GA4/analytics.json en la
+               Orange Pi (ver OPENSPEC §9). Si el fichero falta, falla o viene a
+               cero, el panel muestra un estado vacío elegante; nunca mock. -->
         </div>
       </section>
 

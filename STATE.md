@@ -1,10 +1,16 @@
 # Monli Kiosk — Estado del Proyecto
 
-**Última actualización:** 27/09/2026 (Fase 10: GA4 en vivo vía proxy `analytics.json` y alineación del banner con el badge del puente)
+**Última actualización:** 28/09/2026 (Fase 11: **auditoría final v1.0** — purga total del mock del Panel 4 y estado vacío elegante; kiosco **100 % headless** vía Tailscale + Nginx)
 
 ---
 
-## Fase actual
+## Estado general
+
+**v1.0 — CERRADO.** El kiosco es un frontend estático **100 % headless** servido
+por **Nginx** y accesible vía **Tailscale**, sin datos de demostración. El
+detalle de hitos por fase se conserva a continuación.
+
+---
 
 ### Fase 2 — Integración Dolibarr, Chart.js, carrusel y despliegue Nginx
 
@@ -331,9 +337,9 @@ real de GA4 (proxy con cuenta de servicio; ver `OPENSPEC.md` §9).
       antiguo o puente sin desplegar), igual que el badge `renderInfra()`.
       Probado con 4 combinaciones (OK / ERROR / ausente / minúsculas).
 - [x] `app.js` — `fetchAnalyticsData()` lee de `./analytics.json` con
-      `cache: 'no-store'` y cae al `MOCK_ANALYTICS` si el fichero no existe o
-      falla (degradación elegante); el badge del panel muestra «En vivo» o
-      «Datos demo» según `data.source`.
+      `cache: 'no-store'`; el badge muestra «En vivo» con datos reales y
+      «Esperando datos» (estado vacío, **sin mock**) cuando faltan o vienen a
+      cero (ver Fase 11).
 - [x] Frontend desplegado en la Orange Pi (`/var/www/monli-kiosk`,
       `www-data:www-data 644`, directorios 755), hashes `md5sum` verificados.
 - [x] `analytics.json` servido por Nginx (mismo origen, `HTTP 200
@@ -341,11 +347,46 @@ real de GA4 (proxy con cuenta de servicio; ver `OPENSPEC.md` §9).
 - [x] La implementación del proxy vive en `monli-barr/scripts/fetch_ga4.py`
       (ver `monli-barr/STATE.md`, Fase 14).
 
-**Nota:** la propiedad GA4 `556138617` no tiene tráfico recolectado todavía, por
-lo que `analytics.json` devuelve 0 en todas las métricas. No es un fallo de
-permisos: la cuenta de servicio está autorizada y una propiedad inexistente
-devuelve `403 PERMISSION_DENIED`. En cuanto el flujo `G-563BSRVELH` acumule
-visitas, el Panel 4 las mostrará sin cambios adicionales.
+**Nota:** la propiedad GA4 `556138617` arrancó sin tráfico (0 métricas), lo que
+no es un fallo de permisos: la cuenta de servicio está autorizada y una
+propiedad inexistente devuelve `403 PERMISSION_DENIED`. A fecha de la Fase 11 ya
+hay tráfico real (1 usuario / 1 sesión / 3 páginas vistas en 7 días), mostrado
+por el Panel 4.
+
+---
+
+### Fase 11 — Auditoría final v1.0: purga del mock y cierre headless
+
+**Estado:** ✅ Completada (28/09/2026)
+
+**Objetivos de la fase:**
+
+- Eliminar por completo los datos de demostración del Panel 4 y garantizar que
+  la interfaz **nunca** muestre datos falsos.
+- Consolidar el kiosco como aplicación **100 % headless**, servida por Nginx y
+  accesible vía Tailscale.
+
+**Entregables:**
+
+- [x] `app.js` — eliminada la constante `MOCK_ANALYTICS` y todo su código
+      asociado; `fetchAnalyticsData()` devuelve `null` ante cualquier fallo.
+- [x] `app.js` — nueva función `analyticsHasData()`: un `analytics.json` válido
+      pero todo a cero se considera «sin datos».
+- [x] `app.js` — `renderAnalytics()` muestra un **estado vacío elegante**
+      («Esperando recolección de datos...», badge «Esperando datos») y
+      `renderAnalyticsChart()` oculta el canvas y destruye el gráfico previo, sin
+      dibujar nada falso.
+- [x] `index.html` — badge por defecto «Esperando datos», mensaje «Esperando
+      recolección de datos...» y comentario del panel actualizado.
+- [x] **Verificación:** `node --check app.js` OK + prueba funcional determinista
+      versionada (`tests/panel4.test.js`, 13/13): `null`, todo a cero y `{}` →
+      estado vacío; datos reales → «En vivo» con KPIs reales
+      (1 usuario / 1 sesión / 3 páginas).
+- [x] Frontend desplegado en la Orange Pi (`www-data:www-data 644`, backup
+      `.bak_<ts>` previo, hashes `md5sum` verificados) y `HTTP 200`.
+- [x] **Headless confirmado:** `monli-kiosk.service` `disabled` + `inactive`, sin
+      Xorg/Chromium; dashboard servido por **Nginx** en `:8080` y accesible vía
+      **Tailscale** (`http://100.88.140.37:8080`). Sin exposición pública (CGNAT).
 
 ---
 
@@ -364,6 +405,7 @@ visitas, el Panel 4 las mostrará sin cambios adicionales.
 | 8    | Badge de alerta del puente WooCommerce en el Panel 3            | ✅ Completada |
 | 9    | Banner global de alertas + Panel 4 «Tráfico Web» (mock GA4)     | ✅ Completada |
 | 10   | GA4 en vivo (proxy `analytics.json`) + alineación del banner    | ✅ Completada |
+| 11   | **Auditoría final v1.0**: purga del mock del Panel 4 y cierre headless | ✅ Completada |
 
 ---
 
@@ -396,24 +438,26 @@ corregir dos puntos del backend que no formaban parte del código del kiosco:
 
 Ambos cambios son de solo lectura y no alteran datos de negocio.
 
-### Próximos pasos sugeridos
+### Próximos pasos sugeridos (evolutivos futuros)
 
-- **Orange Pi 100 % headless.** El dashboard se sirve en
+- **Orange Pi 100 % headless (v1.0).** El dashboard se sirve en
   `http://100.88.140.37:8080` (y en local `http://127.0.0.1:8080`) a través de
-  Nginx, pero el kiosco gráfico local está **desactivado de forma permanente**
-  (`monli-kiosk.service` → `disabled` + `inactive`, sin Xorg/Chromium). El
-  servicio se conserva versionado en `monli-kiosk/kiosk/` y puede reactivarse
-  con `sudo systemctl enable --now monli-kiosk.service` si se instala disipador.
-- Retirar los datos de demostración cuando ya no sean necesarios:
-  `sudo /opt/monli/scripts/clean_demo_data.sh` (necesita leer
-  `/opt/monli/.env`). **Ya ejecutado.**
-- **Alertas y tendencias implementadas:** badges `.warning`/`.danger` por
-  umbral y gráfico de línea de temperatura+CPU (2 h) alimentado por
+  **Nginx**, y es accesible vía **Tailscale** sin abrir puertos. El kiosco
+  gráfico local está **desactivado de forma permanente** (`monli-kiosk.service`
+  → `disabled` + `inactive`, sin Xorg/Chromium). El servicio se conserva
+  versionado en `monli-kiosk/kiosk/` y puede reactivarse con
+  `sudo systemctl enable --now monli-kiosk.service` si se instala disipador.
+- **Datos demo:** ya retirados (`clean_demo_data.sh`); no queda ningún registro
+  `DEMO-` ni huérfano.
+- **Alertas y tendencias implementadas:** badges `.warning`/`.danger` por umbral
+  y gráfico de línea de temperatura+CPU (2 h) alimentado por
   `status.json → history`.
-- **UI del kiosco completa y con datos reales (Fase 10).** Banner global de
-  alertas (regla del puente alineada con el badge: `bridge_status !== 'OK'` →
-  error) y Panel 4 «Tráfico Web» alimentado por el proxy GA4
-  (`/var/www/monli-kiosk/analytics.json`, cron de root cada hora). El mock se
-  conserva solo como *fallback* si el fichero falta o falla.
+- **UI del kiosco completa y sin datos falsos (Fases 10–11).** Banner global de
+  alertas (`bridge_status !== 'OK'` → error) y Panel 4 «Tráfico Web» alimentado
+  por el proxy GA4 (`/var/www/monli-kiosk/analytics.json`, cron de root cada
+  hora). **El mock se ha eliminado por completo**; la ausencia de datos se
+  muestra como estado vacío elegante.
+- **Provincias ES (backend):** las 52 provincias de España quedan inyectadas en
+  Dolibarr (`monli-barr`, Fase 15).
 - Versionar futuras modificaciones de los Server Blocks a partir de
   `monli-kiosk/nginx/monli-kiosk.conf` y `monli-barr/nginx/monli-barr.conf`.
