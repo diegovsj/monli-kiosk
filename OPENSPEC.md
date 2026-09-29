@@ -1,5 +1,7 @@
 # Monli Kiosk — Especificación de Arquitectura (OpenSpec)
 
+> ⚠️ **REGLA DE SEGURIDAD (PRIORIDAD MÁXIMA): BAJO NINGÚN CONCEPTO el agente desactivará el modo Coming Soon / Mantenimiento de WooCommerce, ni abrirá la tienda al público, a menos que el usuario utilice la palabra 'LANZAMIENTO OFICIAL' en su prompt.**
+
 **Proyecto:** Monli Kiosk
 **Tipo:** Aplicación SPA ligera para pantalla/Kiosko
 **Versión del documento:** 1.0

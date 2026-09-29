@@ -2,6 +2,8 @@
 
 **Última actualización:** 28/09/2026 (Fase 11: **auditoría final v1.0** — purga total del mock del Panel 4 y estado vacío elegante; kiosco **100 % headless** vía Tailscale + Nginx)
 
+> ⚠️ **REGLA DE SEGURIDAD (PRIORIDAD MÁXIMA): BAJO NINGÚN CONCEPTO el agente desactivará el modo Coming Soon / Mantenimiento de WooCommerce, ni abrirá la tienda al público, a menos que el usuario utilice la palabra 'LANZAMIENTO OFICIAL' en su prompt.**
+
 ---
 
 ## Estado general
