@@ -432,7 +432,7 @@ async function fetchSystemStatus() {
    -------------------------------------------------------------------------- */
 async function fetchSkuStatus() {
   try {
-    const res = await fetch(SKU_STATUS_URL, { cache: 'no-store' });
+    const res = await fetch(SKU_STATUS_URL + '?v=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (!data || typeof data !== 'object') throw new Error('JSON inválido');
