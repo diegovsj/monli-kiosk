@@ -102,6 +102,22 @@ function formatDate(value) {
   }).format(date);
 }
 
+/**
+ * Formatea una duración en segundos como uptime legible (p. ej. "3 d 4 h").
+ * @param {number|string|null|undefined} seconds
+ * @returns {string}
+ */
+function formatUptime(seconds) {
+  const total = Number(seconds);
+  if (!Number.isFinite(total) || total < 0) return '—';
+  const days = Math.floor(total / 86400);
+  const hours = Math.floor((total % 86400) / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  if (days > 0) return `${days} d ${hours} h`;
+  if (hours > 0) return `${hours} h ${minutes} min`;
+  return `${minutes} min`;
+}
+
 /** Escribe un valor en un KPI y actualiza su pista. */
 function setKpi(id, value, hint) {
   const card = document.getElementById(id);
@@ -711,6 +727,8 @@ function renderInfra() {
     applyKpiAlert('metric-disk', null);
     setHealthBadge('health-status', 'err', 'No disponible');
     setHealthBadge('bridge-badge', 'err', 'Sin datos');
+    const uptimeNullEl = $('#sys-uptime');
+    if (uptimeNullEl) uptimeNullEl.textContent = '—';
     renderTrendChart(null);
     return;
   }
@@ -739,6 +757,10 @@ function renderInfra() {
       ? new Date(sys.timestamp).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
       : '—';
   }
+
+  // Uptime del sistema ("Activo desde"): segundos desde el arranque.
+  const uptimeEl = $('#sys-uptime');
+  if (uptimeEl) uptimeEl.textContent = formatUptime(sys.uptime_seconds);
 
   // Backup
   const backupStatus = String(sys.backup_status || '').toUpperCase();

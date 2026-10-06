@@ -1,6 +1,6 @@
 # Monli Kiosk — Estado del Proyecto
 
-**Última actualización:** 06/10/2026 (Fase 12: **telemetría** — KPI «Dinero en vuelo» en el Panel 1 y auditoría de SKUs Tienda ↔ ERP con badge en el Panel 3 y aviso en el banner global)
+**Última actualización:** 06/10/2026 (Fase 13: **uptime, limpieza del Panel 3 y layout 16:9 sin scroll**; datos de SKUs poblados)
 
 > ⚠️ **REGLA DE SEGURIDAD (PRIORIDAD MÁXIMA): BAJO NINGÚN CONCEPTO el agente desactivará el modo Coming Soon / Mantenimiento de WooCommerce, ni abrirá la tienda al público, a menos que el usuario utilice la palabra 'LANZAMIENTO OFICIAL' en su prompt.**
 
@@ -435,6 +435,34 @@ reales del ERP.
 
 ---
 
+### Fase 13 — Uptime, limpieza del Panel 3 y layout 16:9 sin scroll
+
+**Estado:** ✅ Completada (06/10/2026)
+
+**Objetivos:** corregir bugs visuales del Kiosko y garantizar que la app quepa en
+16:9 sin scroll.
+
+**Entregables:**
+
+- [x] **Uptime («Activo desde»):** `observability.sh` publica `uptime_seconds` y
+  `boot_time`; `renderInfra()` rellena `#sys-uptime` con `formatUptime()`
+  (p. ej. «7 d 6 h»). Antes mostraba `—` porque el dato no existía en
+  `status.json`.
+- [x] **Panel 3 sin GA estático:** eliminada la tarjeta `panel--ga` (texto sobre
+  GA4) y su CSS; GA4 vive ya en el Panel 4. El Panel 3 queda: KPIs de
+  infraestructura + tendencia + servicios.
+- [x] **16:9 sin scroll:** `html, body { height: 100vh; overflow: hidden; }`; el
+  grid de infraestructura (`.slide__stack > .slide__grid--infra`) ocupa el alto
+  restante (`flex: 1; min-height: 0; height: auto`); lista de servicios y
+  tipografía compactadas para que quepan sin desbordar.
+- [x] **Datos de SKUs:** ejecutado `sku_auditor.php` manualmente; `sku_status.json`
+  poblado (desaparece el «Sin datos» de la UI).
+- [x] **Despliegue:** `app.js`, `index.html` y `style.css` actualizados en
+  `/var/www/monli-kiosk` (`www-data:www-data 644`, backup `.bak_<ts>` previo,
+  `md5` verificado) y `HTTP 200`.
+
+---
+
 ## Historial de fases
 
 | Fase | Descripción                                          | Estado        |
@@ -452,6 +480,7 @@ reales del ERP.
 | 10   | GA4 en vivo (proxy `analytics.json`) + alineación del banner    | ✅ Completada |
 | 11   | **Auditoría final v1.0**: purga del mock del Panel 4 y cierre headless | ✅ Completada |
 | 12   | **Telemetría**: KPI «Dinero en vuelo» + auditoría de SKUs Tienda ↔ ERP | ✅ Completada |
+| 13   | **Uptime + Panel 3 + layout 16:9 sin scroll** | ✅ Completada |
 
 ---
 

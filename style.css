@@ -65,7 +65,8 @@
 
 html,
 body {
-  height: 100%;
+  height: 100vh;
+  overflow: hidden;
 }
 
 body {
@@ -321,6 +322,15 @@ button {
 .slide__stack > .panel {
   flex: 1;
   min-height: 0;
+}
+
+/* Panel 3 (infraestructura): tras los KPIs hay un grid con el gráfico y la
+   lista de servicios. Debe ocupar el alto restante y no desbordar la pantalla
+   (el scroll, si hiciera falta, queda dentro del panel de servicios). */
+.slide__stack > .slide__grid--infra {
+  flex: 1;
+  min-height: 0;
+  height: auto;
 }
 
 /* --------------------------------------------------------------------------
@@ -649,7 +659,7 @@ button {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: var(--esp-2);
+  gap: var(--esp-1);
 }
 
 .status-list__item {
@@ -657,7 +667,7 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: var(--esp-2);
-  padding-bottom: var(--esp-2);
+  padding-bottom: var(--esp-1);
   border-bottom: 1px solid var(--nube);
 }
 
@@ -667,76 +677,16 @@ button {
 }
 
 .status-list__label {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--texto-suave);
 }
 
 .status-list__value {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: var(--azul-pizarra);
   text-align: right;
-}
-
-/* --------------------------------------------------------------------------
-   Google Analytics (GA4) — acceso estático desde el Panel 3
-   Las métricas reales requieren OAuth/cuenta de servicio en el backend;
-   aquí sólo se documenta y se enlaza al panel web de GA4.
-   -------------------------------------------------------------------------- */
-.slide__stack > .panel--ga {
-  flex: 0 0 auto;
-}
-
-.ga-panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--esp-2);
-}
-
-.ga-panel__text {
-  font-size: 0.85rem;
-  line-height: 1.35;
-  color: var(--texto-suave);
-}
-
-.ga-panel__text strong {
-  color: var(--azul-pizarra);
-}
-
-.ga-panel__tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--esp-1);
-}
-
-.ga-panel__tag {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--azul-pizarra);
-  background: var(--nube);
-  border: 1px solid var(--borde);
-  border-radius: 999px;
-  padding: 3px 10px;
-  white-space: nowrap;
-}
-
-.ga-panel__link {
-  align-self: flex-start;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--blanco);
-  background: var(--menta);
-  border-radius: 999px;
-  padding: 8px 16px;
-  text-decoration: none;
-  transition: background 0.2s ease, transform 0.2s ease;
-}
-
-.ga-panel__link:hover,
-.ga-panel__link:focus-visible {
-  background: #67BFA9;
-  transform: translateY(-1px);
 }
 
 /* Badge de salud */

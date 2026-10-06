@@ -67,8 +67,9 @@ contradicciones.
 ### 4.2 `status.json` (Orange Pi)
 
 - Documento JSON servido por la propia Orange Pi (ruta relativa `./status.json`).
-- Informa del estado del dispositivo: temperatura, uso de CPU/RAM, uptime,
-  conectividad, etc.
+- Informa del estado del dispositivo: temperatura, uso de CPU/RAM, disco,
+  estado del backup y del puente, **uptime** (`uptime_seconds` y `boot_time`) y
+  el histórico de 2 h (`history`).
 - Su esquema es flexible y se documentará al implementar la integración.
 
 ### 4.3 `sku_status.json` (auditoría de SKUs)
@@ -117,11 +118,10 @@ pantalla):
 4. **Panel 3 — Infraestructura & Web:** métricas de `status.json` (CPU, RAM,
    disco, temperatura), **línea de tendencia dual** (temperatura + CPU, últimas
    2 h desde `status.json → history`) y estado de servicios (API Dolibarr,
-   `status.json`, puente WooCommerce Sync y backup con badge verde/rojo). El
-   badge del puente refleja `status.json → bridge_status` (`OK`/`ERROR`),
-   publicado por `observability.sh`. Incluye el badge **«SKUs Tienda ↔ ERP»**
-   (`sku_status.json`, ver §4.3) y la tarjeta estática `panel--ga` con acceso
-   directo a la interfaz web de Google Analytics.
+   `status.json`, puente WooCommerce Sync, **SKUs Tienda ↔ ERP** y backup con
+   badge verde/rojo), más **«Activo desde»** (`uptime_seconds`). El badge del
+   puente refleja `status.json → bridge_status` (`OK`/`ERROR`), publicado por
+   `observability.sh`.
 5. **Panel 4 — Tráfico Web:** KPIs de GA4 (usuarios, sesiones, páginas vistas) y
    gráfico de líneas, alimentados por el proxy `analytics.json`
    (`monli-barr/scripts/fetch_ga4.py`). Si faltan datos ⇒ **estado vacío
@@ -200,8 +200,8 @@ muestra un **estado vacío elegante** («Esperando recolección de datos...», b
 código). El diseño sin dependencias pesadas (JWT RS256 firmado con `openssl` +
 `curl`) es el más estable en Armbian. Detalle en `monli-barr/scripts/README.md`.
 
-La sección estática del Panel 3 (`panel--ga`) se conserva como acceso directo a
-la interfaz web de GA4.
+La antigua sección estática del Panel 3 (`panel--ga`) se **eliminó** en la
+Fase 13 para evitar duplicidad; las métricas de GA4 se consultan en el Panel 4.
 
 ---
 
