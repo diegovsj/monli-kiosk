@@ -13,6 +13,7 @@
 const CONFIG = window.MONLI_CONFIG || {};
 
 const STATUS_URL = './status.json';
+const SKU_STATUS_URL = './sku_status.json'; // auditoría SKUs Tienda ↔ ERP
 const REFRESH_MS = 60_000;        // refresco de datos cada 60 s
 const CAROUSEL_INTERVAL_MS = 15_000; // cambio de panel cada 15 s
 const ORDERS_LIMIT = 100;
@@ -43,6 +44,7 @@ const state = {
   thirdparties: [],
   system: null,
   analytics: null,
+  sku: null,
   charts: { quarter: null, infra: null, analytics: null },
   carousel: { index: 0, paused: false, timer: null },
 };
@@ -201,9 +203,12 @@ function applyKpiAlert(id, level) {
  *   de salud y se marca ERROR.
  * - REGLA 2 (Negocio, aviso · Amarillo Limón): pedidos de Dolibarr en estado
  *   Borrador/Validado (nuevos, pendientes de gestionar).
+ * - REGLA 3 (Datos, aviso · Amarillo Limón): desajuste de SKUs entre la Tienda
+ *   (WooCommerce) y el ERP (Dolibarr), según `sku_status.json` del auditor.
  *
- * Las alertas de sistema tienen prioridad y, si coexisten con las de negocio,
- * se muestran apiladas (sistema arriba). Sin alertas, el banner se oculta.
+ * Las alertas de sistema tienen prioridad y, si coexisten con las de negocio o
+ * de datos, se muestran apiladas (sistema arriba). Sin alertas, el banner se
+ * oculta.
  */
 function updateGlobalBanner() {
   const banner = document.getElementById('global-alert-banner');
@@ -263,6 +268,19 @@ function updateGlobalBanner() {
         pendingOrders.length === 1
           ? '📦 Tienes 1 pedido nuevo pendiente de gestionar'
           : `📦 Tienes ${pendingOrders.length} pedidos nuevos pendientes de gestionar`,
+    });
+  }
+
+  /* REGLA 3 — Datos: desajuste de SKUs entre Tienda y ERP. */
+  const skuCount = skuMismatchCount(state.sku);
+  if (skuCount !== null && skuCount > 0) {
+    const inStore = (state.sku.missing_in_dolibarr || []).length;
+    const inErp = (state.sku.missing_in_wordpress || []).length;
+    alerts.push({
+      level: 'warning',
+      text:
+        '⚠️ Desajuste de SKUs detectado entre Tienda y ERP · ' +
+        `${inStore} en Tienda sin ERP · ${inErp} en ERP sin Tienda`,
     });
   }
 
@@ -389,6 +407,62 @@ async function fetchSystemStatus() {
 }
 
 /* --------------------------------------------------------------------------
+   Fuente de datos 4 — Auditoría de SKUs (Tienda ↔ ERP)
+   El script `/opt/monli/scripts/sku_auditor.php` (cron de root cada 12 h)
+   publica `./sku_status.json` en el webroot del kiosco. Compara los SKUs de
+   WooCommerce con las referencias vendibles de Dolibarr. Si el fichero no
+   existe o la auditoría falla, se muestra «Sin datos» y NO se alerta (evita
+   falsos positivos).
+   -------------------------------------------------------------------------- */
+async function fetchSkuStatus() {
+  try {
+    const res = await fetch(SKU_STATUS_URL, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!data || typeof data !== 'object') throw new Error('JSON inválido');
+    console.info('[Monli Kiosk] sku_status.json recibido.', data);
+    return data;
+  } catch (error) {
+    console.warn('[Monli Kiosk] sku_status.json no disponible.', error.message);
+    return null;
+  }
+}
+
+/**
+ * Número de desajustes de SKUs, o `null` si no hay datos válidos (fichero
+ * ausente o auditoría con error). Un `null` NUNCA dispara alertas.
+ * @returns {number|null}
+ */
+function skuMismatchCount(sku) {
+  if (!sku || typeof sku !== 'object' || sku.error) return null;
+  const n = Number(sku.mismatch_count);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Actualiza el badge de SKUs (Panel 3) y avisa por consola si hay desajuste. */
+function renderSkuBadge() {
+  const el = document.getElementById('sku-badge');
+  const count = skuMismatchCount(state.sku);
+  if (count === null) {
+    setHealthBadge('sku-badge', 'pending', 'Sin datos');
+    if (el) el.title = 'Sin auditoría de SKUs todavía (sku_status.json ausente o con error).';
+    return;
+  }
+  const inStore = (state.sku.missing_in_dolibarr || []).length;
+  const inErp = (state.sku.missing_in_wordpress || []).length;
+  if (count > 0) {
+    setHealthBadge('sku-badge', 'warn', `Desajuste (${count})`);
+    if (el) el.title = `Tienda sin ERP: ${inStore} · ERP sin tienda: ${inErp}`;
+    console.warn(
+      `[Monli Kiosk] Desajuste de SKUs: ${inStore} en Tienda sin ERP, ${inErp} en ERP sin Tienda.`
+    );
+  } else {
+    setHealthBadge('sku-badge', 'ok', 'OK');
+    if (el) el.title = 'SKUs de Tienda y ERP alineados.';
+  }
+}
+
+/* --------------------------------------------------------------------------
    Cálculos del dashboard
    -------------------------------------------------------------------------- */
 /**
@@ -426,6 +500,14 @@ function computeMetrics() {
 
   const processing = ordersQuarter.filter((ord) => ['1', '2'].includes(String(ord.statut)));
 
+  // "Dinero en vuelo": pedidos del trimestre que NO están cancelados y que
+  // todavía NO se han facturado en el ERP (`billed` distinto de 1). Refleja el
+  // valor económico de los pedidos entrantes antes de emitir factura.
+  const inflightOrders = ordersQuarter.filter(
+    (ord) => String(ord.statut) !== '-1' && Number(ord.billed) !== 1
+  );
+  const moneyInFlight = inflightOrders.reduce((sum, ord) => sum + (Number(ord.total_ttc) || 0), 0);
+
   return {
     quarter,
     year,
@@ -439,6 +521,8 @@ function computeMetrics() {
     recentOrders: state.orders.slice(0, 12),
     ordersTotal: ordersQuarter.reduce((sum, ord) => sum + (Number(ord.total_ttc) || 0), 0),
     pendingInvoicesCount: pendingInvoices.length,
+    moneyInFlight,
+    inflightCount: inflightOrders.length,
   };
 }
 
@@ -456,6 +540,11 @@ function renderFinance(metrics) {
     'kpi-revenue-quarter',
     formatCurrency(metrics.totalInvoicedQuarter),
     `T${metrics.quarter} ${metrics.year} · ${metrics.pendingInvoicesCount} facturas pendientes`
+  );
+  setKpi(
+    'kpi-inflight',
+    formatCurrency(metrics.moneyInFlight),
+    `Dinero en vuelo · ${metrics.inflightCount} pedido(s) sin facturar en T${metrics.quarter} ${metrics.year}`
   );
   setKpi('kpi-revenue-month', formatCurrency(metrics.totalInvoicedMonth), 'Facturación del mes en curso');
   setKpi(
@@ -990,20 +1079,23 @@ function renderAnalyticsChart(weekly) {
 async function render() {
   setLastUpdate();
 
-  const [analytics] = await Promise.all([
+  const [analytics, sku] = await Promise.all([
     fetchAnalyticsData(),
     fetchDolibarrData(),
     fetchSystemStatus(),
+    fetchSkuStatus(),
   ]);
   state.analytics = analytics;
+  state.sku = sku;
 
   const metrics = computeMetrics();
   renderFinance(metrics);
   renderOrders(metrics);
   renderInfra();
   renderAnalytics();
+  renderSkuBadge();
 
-  // Banner global de alertas (sistema + negocio).
+  // Banner global de alertas (sistema + negocio + desajuste de SKUs).
   updateGlobalBanner();
 
   // Estado de conexión general.
@@ -1155,10 +1247,14 @@ window.MonliKiosk = {
   init,
   render,
   computeMetrics,
+  renderFinance,
   fetchDolibarrData,
   fetchSystemStatus,
   fetchAnalyticsData,
+  fetchSkuStatus,
   renderAnalytics,
+  renderSkuBadge,
+  skuMismatchCount,
   updateGlobalBanner,
   dolibarrGet,
   state,

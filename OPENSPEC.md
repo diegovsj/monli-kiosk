@@ -71,6 +71,16 @@ contradicciones.
   conectividad, etc.
 - Su esquema es flexible y se documentará al implementar la integración.
 
+### 4.3 `sku_status.json` (auditoría de SKUs)
+
+- Lo publica `monli-barr/scripts/sku_auditor.php` (cron de root cada 12 h) en el
+  webroot del kiosco (ruta relativa `./sku_status.json`).
+- Compara los SKUs de WooCommerce con las referencias **vendibles** de Dolibarr y
+  expone `mismatch_count`, `missing_in_dolibarr`, `missing_in_wordpress`, etc.
+- El Panel 3 muestra el badge «SKUs Tienda ↔ ERP» y el **banner global** avisa
+  (Amarillo Limón) si hay desajustes. Si el fichero falta o trae error, no se
+  alerta.
+
 ---
 
 ## 5. Estructura del proyecto
@@ -98,8 +108,10 @@ pantalla):
 1. **`<header>`** — logo Monli Limón, título del dashboard, badge de conexión
    y marca de última actualización.
 2. **Panel 1 — Trimestre y finanzas:** KPIs de facturación (trimestre, mes,
-   pedidos del trimestre, facturación pendiente) y gráfico de barras Chart.js
-   con la evolución mensual del trimestre (facturado vs. pendiente).
+   pedidos del trimestre, facturación pendiente) más el KPI **«Dinero en vuelo»**
+   (pedidos del trimestre no cancelados y aún sin facturar, a ancho completo) y
+   gráfico de barras Chart.js con la evolución mensual del trimestre (facturado
+   vs. pendiente).
 3. **Panel 2 — Pedidos en curso:** mini-KPIs y tabla de pedidos recientes
    (referencia, cliente, fecha, importe y estado de procesamiento).
 4. **Panel 3 — Infraestructura & Web:** métricas de `status.json` (CPU, RAM,
@@ -107,8 +119,9 @@ pantalla):
    2 h desde `status.json → history`) y estado de servicios (API Dolibarr,
    `status.json`, puente WooCommerce Sync y backup con badge verde/rojo). El
    badge del puente refleja `status.json → bridge_status` (`OK`/`ERROR`),
-   publicado por `observability.sh`. Incluye la tarjeta estática `panel--ga` con
-   acceso directo a la interfaz web de Google Analytics.
+   publicado por `observability.sh`. Incluye el badge **«SKUs Tienda ↔ ERP»**
+   (`sku_status.json`, ver §4.3) y la tarjeta estática `panel--ga` con acceso
+   directo a la interfaz web de Google Analytics.
 5. **Panel 4 — Tráfico Web:** KPIs de GA4 (usuarios, sesiones, páginas vistas) y
    gráfico de líneas, alimentados por el proxy `analytics.json`
    (`monli-barr/scripts/fetch_ga4.py`). Si faltan datos ⇒ **estado vacío

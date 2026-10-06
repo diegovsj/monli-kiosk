@@ -1,6 +1,6 @@
 # Monli Kiosk — Estado del Proyecto
 
-**Última actualización:** 28/09/2026 (Fase 11: **auditoría final v1.0** — purga total del mock del Panel 4 y estado vacío elegante; kiosco **100 % headless** vía Tailscale + Nginx)
+**Última actualización:** 06/10/2026 (Fase 12: **telemetría** — KPI «Dinero en vuelo» en el Panel 1 y auditoría de SKUs Tienda ↔ ERP con badge en el Panel 3 y aviso en el banner global)
 
 > ⚠️ **REGLA DE SEGURIDAD (PRIORIDAD MÁXIMA): BAJO NINGÚN CONCEPTO el agente desactivará el modo Coming Soon / Mantenimiento de WooCommerce, ni abrirá la tienda al público, a menos que el usuario utilice la palabra 'LANZAMIENTO OFICIAL' en su prompt.**
 
@@ -392,6 +392,49 @@ por el Panel 4.
 
 ---
 
+### Fase 12 — KPI «Dinero en vuelo» y auditoría de SKUs Tienda ↔ ERP
+
+**Estado:** ✅ Completada (06/10/2026)
+
+**Objetivos de la fase:**
+
+- Mostrar de un vistazo el valor económico de los pedidos entrantes aún sin
+  facturar («dinero en vuelo»), para resolver la duda contable del usuario.
+- Detectar y avisar de desajustes de SKUs entre la Tienda (WooCommerce) y el ERP
+  (Dolibarr).
+
+**Entregables:**
+
+- [x] **KPI «Dinero en vuelo · pedidos sin facturar»** (`#kpi-inflight`, Panel 1,
+  ancho completo con acento Amarillo Limón). Calculado en `computeMetrics()` como
+  la suma de `total_ttc` de los pedidos del **trimestre actual** que **no** están
+  cancelados (`statut !== '-1'`) y **no** están facturados (`billed !== 1`).
+  Se ignoran cancelados, facturados y otros trimestres.
+- [x] **Auditoría de SKUs:** `fetchSkuStatus()` lee `./sku_status.json` (publicado
+  por `monli-barr/scripts/sku_auditor.php`, cron cada 12 h). Badge
+  `#sku-badge` («SKUs Tienda ↔ ERP») en el Panel 3 con estados `Sin datos` /
+  `OK` / `Desajuste (N)`.
+- [x] **Banner global (REGLA 3, Amarillo Limón):** si hay desajustes, avisa
+  «⚠️ Desajuste de SKUs detectado entre Tienda y ERP · X en Tienda sin ERP · Y en
+  ERP sin Tienda». Si `sku_status.json` falta o viene con error, **no** se alerta
+  (evita falsos positivos).
+- [x] **Sin datos falsos:** ausencia de `sku_status.json` → badge «Sin datos» y
+  sin banner.
+- [x] **Prueba determinista versionada** (`tests/sku-kpi.test.js`): cálculo de
+  `moneyInFlight`/`inflightCount`, relleno del KPI, `skuMismatchCount`,
+  estados del badge y aparición/ocultado del banner. **ALL_PASS** (junto con
+  `tests/panel4.test.js` 13/13).
+- [x] **Despliegue:** `app.js`, `index.html` y `style.css` actualizados en
+  `/var/www/monli-kiosk` (`www-data:www-data 644`, backup `.bak_<ts>` previo,
+  hashes `md5sum` verificados) y `HTTP 200`.
+
+**Nota:** el JSON del auditor indica que hoy hay desajustes (catálogo de la
+Tienda en DEMO/INT/TEST frente al catálogo real PRD/PCK del ERP), por lo que el
+banner avisa; es el comportamiento esperado hasta que la Tienda use los SKUs
+reales del ERP.
+
+---
+
 ## Historial de fases
 
 | Fase | Descripción                                          | Estado        |
@@ -408,6 +451,7 @@ por el Panel 4.
 | 9    | Banner global de alertas + Panel 4 «Tráfico Web» (mock GA4)     | ✅ Completada |
 | 10   | GA4 en vivo (proxy `analytics.json`) + alineación del banner    | ✅ Completada |
 | 11   | **Auditoría final v1.0**: purga del mock del Panel 4 y cierre headless | ✅ Completada |
+| 12   | **Telemetría**: KPI «Dinero en vuelo» + auditoría de SKUs Tienda ↔ ERP | ✅ Completada |
 
 ---
 
@@ -461,5 +505,9 @@ Ambos cambios son de solo lectura y no alteran datos de negocio.
   muestra como estado vacío elegante.
 - **Provincias ES (backend):** las 52 provincias de España quedan inyectadas en
   Dolibarr (`monli-barr`, Fase 15).
+- **Telemetría (Fase 12):** KPI «Dinero en vuelo» (pedidos sin facturar) y
+  auditoría de SKUs Tienda ↔ ERP (`sku_status.json` → badge del Panel 3 + aviso
+  del banner). El desajuste actual es esperado mientras la Tienda use SKUs
+  DEMO/INT/TEST en vez del catálogo real del ERP.
 - Versionar futuras modificaciones de los Server Blocks a partir de
   `monli-kiosk/nginx/monli-kiosk.conf` y `monli-barr/nginx/monli-barr.conf`.

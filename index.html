@@ -65,6 +65,12 @@
       <section class="slide is-active" data-slide="0" aria-label="Trimestre y finanzas">
         <div class="slide__grid slide__grid--finance">
           <div class="kpis" aria-label="Indicadores del trimestre">
+            <article class="kpi-card kpi-card--inflight" id="kpi-inflight">
+              <h2 class="kpi-card__label">Dinero en vuelo · pedidos sin facturar</h2>
+              <p class="kpi-card__value" data-value>—</p>
+              <p class="kpi-card__hint" data-hint>Cargando…</p>
+            </article>
+
             <article class="kpi-card kpi-card--featured" id="kpi-revenue-quarter">
               <h2 class="kpi-card__label">Facturado en el trimestre</h2>
               <p class="kpi-card__value" data-value>—</p>
@@ -206,6 +212,10 @@
                   <li class="status-list__item">
                     <span class="status-list__label">Puente Web (WooCommerce Sync)</span>
                     <span id="bridge-badge" class="health-badge" data-state="pending">—</span>
+                  </li>
+                  <li class="status-list__item">
+                    <span class="status-list__label">SKUs Tienda ↔ ERP</span>
+                    <span id="sku-badge" class="health-badge" data-state="pending">—</span>
                   </li>
                   <li class="status-list__item">
                     <span class="status-list__label">Backup</span>

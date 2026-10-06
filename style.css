@@ -395,6 +395,27 @@ button {
   color: var(--blanco);
 }
 
+/* KPI "Dinero en vuelo": ocupa el ancho completo y se acentúa en Amarillo
+   Limón para destacar el valor de los pedidos entrantes aún sin facturar. */
+.kpi-card--inflight {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, #FFF7DE 0%, #FFFDF8 100%);
+  border-color: rgba(241, 208, 119, 0.85);
+  border-left: 6px solid var(--amarillo);
+}
+
+.kpi-card--inflight .kpi-card__label {
+  color: #8A6D1E;
+}
+
+.kpi-card--inflight .kpi-card__value {
+  color: var(--azul-pizarra);
+}
+
+.kpi-card--inflight .kpi-card__hint {
+  color: #8A6D1E;
+}
+
 /* --------------------------------------------------------------------------
    Estados de alerta de los KPI (temperatura, CPU, RAM y disco)
    - .warning: borde y acento en Amarillo Limón (#F1D077)
