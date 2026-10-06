@@ -91,7 +91,7 @@ monli-kiosk/
 
 ## 6. Estructura del dashboard (`index.html`)
 
-Layout de una sola pantalla organizado como **carrusel de 3 paneles**
+Layout de una sola pantalla organizado como **carrusel de 4 paneles**
 conmutables automáticamente cada 15 s (pausable al mover el ratón o tocar la
 pantalla):
 
@@ -103,12 +103,18 @@ pantalla):
 3. **Panel 2 — Pedidos en curso:** mini-KPIs y tabla de pedidos recientes
    (referencia, cliente, fecha, importe y estado de procesamiento).
 4. **Panel 3 — Infraestructura & Web:** métricas de `status.json` (CPU, RAM,
-   disco, temperatura), gráfico de uso de recursos y estado de servicios
-   (API Dolibarr, `status.json`, puente WooCommerce Sync y backup con badge
-   verde/rojo). El badge del puente refleja `status.json → bridge_status`
-   (`OK`/`ERROR`), publicado por `observability.sh`.
-5. **`<footer>`** — navegación del carrusel (puntos, flechas y estado
-   pausa/activo) y barra de progreso.
+   disco, temperatura), **línea de tendencia dual** (temperatura + CPU, últimas
+   2 h desde `status.json → history`) y estado de servicios (API Dolibarr,
+   `status.json`, puente WooCommerce Sync y backup con badge verde/rojo). El
+   badge del puente refleja `status.json → bridge_status` (`OK`/`ERROR`),
+   publicado por `observability.sh`. Incluye la tarjeta estática `panel--ga` con
+   acceso directo a la interfaz web de Google Analytics.
+5. **Panel 4 — Tráfico Web:** KPIs de GA4 (usuarios, sesiones, páginas vistas) y
+   gráfico de líneas, alimentados por el proxy `analytics.json`
+   (`monli-barr/scripts/fetch_ga4.py`). Si faltan datos ⇒ **estado vacío
+   elegante**; nunca se inyectan datos falsos.
+6. **`<footer>`** — navegación del carrusel (4 puntos, flechas y estado
+   pausa/activo) y barra de progreso, más el banner global de alertas.
 
 ---
 
