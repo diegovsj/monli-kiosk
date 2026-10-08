@@ -1101,11 +1101,15 @@ function renderAnalyticsChart(weekly) {
 async function render() {
   setLastUpdate();
 
+  // IMPORTANTE: el orden del array debe casar con la destructuración. Las
+  // funciones de Dolibarr y status.json devuelven por efecto secundario (fijan
+  // `state.*`), por lo que solo se capturan los dos valores con retorno:
+  // `fetchAnalyticsData()` (analytics) y `fetchSkuStatus()` (sku).
   const [analytics, sku] = await Promise.all([
     fetchAnalyticsData(),
+    fetchSkuStatus(),
     fetchDolibarrData(),
     fetchSystemStatus(),
-    fetchSkuStatus(),
   ]);
   state.analytics = analytics;
   state.sku = sku;

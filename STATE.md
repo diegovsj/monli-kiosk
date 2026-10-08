@@ -463,6 +463,48 @@ reales del ERP.
 
 ---
 
+### Fase 14 — Fix definitivo del badge «SKU Tienda ↔ ERP» (cableado de `render()`)
+
+**Estado:** ✅ Completada (08/10/2026)
+
+**Objetivos:** erradicar el «Sin datos» persistente del badge de SKUs del Panel 3
+y dejar el indicador fiable (verde «OK» sin desajustes; amarillo «Desajuste (N)»
+con desajustes).
+
+**Causa raíz (bug de cableado):** `render()` destructuraba el array de
+`Promise.all` en un orden que no casaba con las posiciones:
+
+```js
+const [analytics, sku] = await Promise.all([
+  fetchAnalyticsData(), // 1ª -> analytics
+  fetchDolibarrData(),  // 2ª -> se asignaba a `sku` (devuelve undefined)
+  fetchSystemStatus(),  // 3ª -> descartada
+  fetchSkuStatus(),     // 4ª -> DESCARTADA (¡el dato real del badge!)
+]);
+```
+
+`fetchDolibarrData()` y `fetchSystemStatus()` trabajan por efecto secundario
+(fijan `state.*`) y devuelven `undefined`; por tanto `state.sku` quedaba
+`undefined` y `skuMismatchCount(undefined) === null` → el badge caía **siempre**
+a «Sin datos», aunque `sku_status.json` fuese válido.
+
+**Corrección:** se reordena el array para que `fetchSkuStatus()` sea el 2º
+elemento (el que se asigna a `sku`) y se documenta con un comentario de aviso
+para evitar regresiones.
+
+**Prueba de regresión:** `tests/render-wiring.test.js` ejecuta el `render()`
+real con un DOM permisivo y un `fetch` simulado, y comprueba que `state.sku`
+recibe el payload de `sku_status.json` y que el badge pasa de «Sin datos» a
+«Desajuste (1)» (amarillo) y a «OK» (verde). **ALL_PASS**.
+
+**Auditoría y despliegue:** `sku_auditor.php` re-ejecutado → `mismatch_count=0`,
+`ok=true` (21 SKUs de WooCommerce ↔ 21 refs vendibles de Dolibarr). `app.js`
+corregido desplegado en `/var/www/monli-kiosk/` (`www-data:www-data 644`, backup
+`.bak_<ts>` previo, `md5` verificado) y `HTTP 200`; `sku_status.json` servido por
+HTTP. El badge queda en verde **OK**.
+
+---
+
 ## Historial de fases
 
 | Fase | Descripción                                          | Estado        |
@@ -481,6 +523,7 @@ reales del ERP.
 | 11   | **Auditoría final v1.0**: purga del mock del Panel 4 y cierre headless | ✅ Completada |
 | 12   | **Telemetría**: KPI «Dinero en vuelo» + auditoría de SKUs Tienda ↔ ERP | ✅ Completada |
 | 13   | **Uptime + Panel 3 + layout 16:9 sin scroll** | ✅ Completada |
+| 14   | **Fix badge «SKU Tienda ↔ ERP»** (cableado de `render()`) | ✅ Completada |
 
 ---
 
